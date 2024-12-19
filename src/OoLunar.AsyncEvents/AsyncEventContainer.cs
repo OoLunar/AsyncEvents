@@ -4,31 +4,56 @@ using System.Runtime.CompilerServices;
 
 namespace OoLunar.AsyncEvents
 {
+    /// <summary>
+    /// An object that contains asynchronous events and event handlers.
+    /// Intended to be used for dependency injection as a singleton or in a similar manner.
+    /// </summary>
     public sealed class AsyncEventContainer
     {
         private readonly Dictionary<Type, object> _serverEvents = [];
         private readonly Dictionary<Type, List<(AsyncEventHandler, AsyncEventPriority)>> _postHandlers = [];
         private readonly Dictionary<Type, List<(AsyncEventPreHandler, AsyncEventPriority)>> _preHandlers = [];
 
-        private readonly bool _parallelize;
-        private readonly int _minimumParallelHandlers;
+        /// <inheritdoc cref="AsyncEvent{T}.ParallelizationEnabled"/>
+        public bool ParallelizationEnabled { get; init; }
 
+        /// <inheritdoc cref="AsyncEvent{T}.MinimumParallelHandlerCount"/>
+        public int MinimumParallelHandlerCount { get; init; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
+        /// </summary>
         public AsyncEventContainer() : this(false, 0) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
+        /// </summary>
+        /// <inheritdoc cref="AsyncEvent{T}.AsyncEvent(bool)"/>
         public AsyncEventContainer(bool parallelize) : this(parallelize, Environment.ProcessorCount) { }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
+        /// </summary>
+        /// <inheritdoc cref="AsyncEvent{T}.AsyncEvent(bool, int)"/>
         public AsyncEventContainer(bool parallelize, int minimumParallelHandlers)
         {
-            _parallelize = parallelize;
-            _minimumParallelHandlers = minimumParallelHandlers;
+            ParallelizationEnabled = parallelize;
+            MinimumParallelHandlerCount = minimumParallelHandlers;
         }
 
-        public AsyncEvent<T> GetAsyncServerEvent<T>() where T : AsyncEventArgs
+        /// <summary>
+        /// Finds or lazily creates an asynchronous event of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
+        /// <returns>A prepared asynchronous event of the specified type with the appropriate handlers.</returns>
+        public AsyncEvent<T> GetAsyncEvent<T>() where T : AsyncEventArgs
         {
             if (_serverEvents.TryGetValue(typeof(T), out object? value))
             {
                 return (AsyncEvent<T>)value;
             }
 
-            AsyncEvent<T> asyncServerEvent = new(_parallelize, _minimumParallelHandlers);
+            AsyncEvent<T> asyncServerEvent = new(ParallelizationEnabled, MinimumParallelHandlerCount);
             if (_preHandlers.TryGetValue(typeof(T), out List<(AsyncEventPreHandler, AsyncEventPriority)>? preHandlers))
             {
                 foreach ((AsyncEventPreHandler preHandler, AsyncEventPriority priority) in preHandlers)
@@ -54,6 +79,12 @@ namespace OoLunar.AsyncEvents
             return asyncServerEvent;
         }
 
+        /// <summary>
+        /// Registers an asynchronous event handler for the specified event type.
+        /// </summary>
+        /// <param name="preHandler">The asynchronous event handler to register.</param>
+        /// <param name="priority">The priority of the event handler.</param>
+        /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
             if (!_preHandlers.TryGetValue(typeof(T), out List<(AsyncEventPreHandler, AsyncEventPriority)>? preHandlers))
@@ -65,7 +96,13 @@ namespace OoLunar.AsyncEvents
             preHandlers.Add((Unsafe.As<AsyncEventPreHandler<T>, AsyncEventPreHandler>(ref preHandler), priority));
         }
 
-        public void AddPreHandler(Type type, AsyncEventPreHandler preHandler, AsyncEventPriority priority)
+        /// <summary>
+        /// Registers an asynchronous event handler for the specified event type.
+        /// </summary>
+        /// <param name="preHandler">The asynchronous event handler to register.</param>
+        /// <param name="priority">The priority of the event handler.</param>
+        /// <param name="type">The type of the asynchronous event arguments.</param>
+        public void AddPreHandler(AsyncEventPreHandler preHandler, AsyncEventPriority priority, Type type)
         {
             if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {
@@ -81,6 +118,12 @@ namespace OoLunar.AsyncEvents
             preHandlers.Add((preHandler, priority));
         }
 
+        /// <summary>
+        /// Registers an asynchronous event handler for the specified event type.
+        /// </summary>
+        /// <param name="postHandler">The asynchronous event handler to register.</param>
+        /// <param name="priority">The priority of the event handler.</param>
+        /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPostHandler<T>(AsyncEventHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
             if (!_postHandlers.TryGetValue(typeof(T), out List<(AsyncEventHandler, AsyncEventPriority)>? postHandlers))
@@ -92,7 +135,13 @@ namespace OoLunar.AsyncEvents
             postHandlers.Add((Unsafe.As<AsyncEventHandler<T>, AsyncEventHandler>(ref postHandler), priority));
         }
 
-        public void AddPostHandler(Type type, AsyncEventHandler postHandler, AsyncEventPriority priority)
+        /// <summary>
+        /// Registers an asynchronous event handler for the specified event type.
+        /// </summary>
+        /// <param name="postHandler">The asynchronous event handler to register.</param>
+        /// <param name="priority">The priority of the event handler.</param>
+        /// <param name="type">The type of the asynchronous event arguments.</param>
+        public void AddPostHandler(AsyncEventHandler postHandler, AsyncEventPriority priority, Type type)
         {
             if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {

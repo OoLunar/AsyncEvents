@@ -1,6 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
+  <PropertyGroup Label="Build Properties">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <PropertyGroup Label="Nuget">
+    <PackageId>OoLunar.AsyncEvents</PackageId>
+    <Authors>Lunar Starstrum</Authors>
+    <Description>Async events for .NET</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/OoLunar/AsyncEvents</PackageProjectUrl>
+    <PackageTags>async events,async-events,async,events</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
   </PropertyGroup>
 </Project>
