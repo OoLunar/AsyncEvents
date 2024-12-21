@@ -2,6 +2,15 @@
 
 Async events for .NET
 
+## Features
+
+- `Pre`/`Post` event handler support.
+- `AsyncEventHandlerPriority` support.
+- Mark your event handlers with `AsyncEventHandlerAttribute`.
+- Add, modify, or remove your event handlers even after they've been prepared by calling `AsyncEvent<TEventArgs>.Prepare()` after making your changes.
+- `AsyncEvent<TEventArgs>` is thread-safe and can be used in multi-threaded environments.
+- A `AsyncEventContainer` to allow for easy management of multiple `AsyncEvent<TEventArgs>` instances and mass-preparation of all event handlers.
+
 ## Installation
 
 `OoLunar.AsyncEvents` is available on [NuGet](https://www.nuget.org/packages/OoLunar.AsyncEvents/).
