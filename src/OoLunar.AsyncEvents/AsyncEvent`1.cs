@@ -104,22 +104,32 @@ namespace OoLunar.AsyncEvents
 
                 // Else if the method's signature does not match the expected signature, skip the method
                 ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1 || !parameters[0].ParameterType.IsSubclassOf(typeof(TEventArgs)))
+                if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableTo(typeof(TEventArgs)))
                 {
                     continue;
                 }
 
-                Type genericMethodType = method.ReturnType == typeof(ValueTask<bool>)
-                    ? typeof(AsyncEventPreHandler<>).MakeGenericType(parameters[0].ParameterType)
-                    : typeof(AsyncEventHandler<>).MakeGenericType(parameters[0].ParameterType);
-
-                if (method.IsStatic)
+                if (method.ReturnType == typeof(ValueTask<bool>))
                 {
-                    AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority);
+                    if (method.IsStatic)
+                    {
+                        AddPreHandler((AsyncEventPreHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPreHandler<TEventArgs>), method), attribute.Priority);
+                    }
+                    else if (target is not null)
+                    {
+                        AddPreHandler((AsyncEventPreHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPreHandler<TEventArgs>), target, method), attribute.Priority);
+                    }
                 }
-                else if (target is not null)
+                else
                 {
-                    AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority);
+                    if (method.IsStatic)
+                    {
+                        AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventHandler<TEventArgs>), method), attribute.Priority);
+                    }
+                    else if (target is not null)
+                    {
+                        AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventHandler<TEventArgs>), target, method), attribute.Priority);
+                    }
                 }
             }
         }
@@ -221,8 +231,8 @@ namespace OoLunar.AsyncEvents
         [SuppressMessage("Roslyn", "IDE0045", Justification = "Ternary rabbit hole.")]
         public void Prepare()
         {
-            _preEventHandlerDelegate = CreatePreHandlerDelegate(_preHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToArray());
-            _postEventHandlerDelegate = CreatePostHandlerDelegate(_postHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToArray());
+            _preEventHandlerDelegate = CreatePreHandlerDelegate(_preHandlers.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray());
+            _postEventHandlerDelegate = CreatePostHandlerDelegate(_postHandlers.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray());
         }
 
         private AsyncEventPreHandler<TEventArgs> CreatePreHandlerDelegate(AsyncEventPreHandler<TEventArgs>[] handlers) => handlers.Length switch
@@ -252,13 +262,9 @@ namespace OoLunar.AsyncEvents
                     {
                         throw new AggregateException(error, ex);
                     }
-                    else
-                    {
-                        throw;
-                    }
                 }
 
-                return result;
+                return error is not null ? throw error : result;
             }
             ,
             _ when !ParallelizationEnabled && handlers.Length > MinimumParallelHandlerCount => async (TEventArgs eventArgs) =>
@@ -336,10 +342,11 @@ namespace OoLunar.AsyncEvents
                     {
                         throw new AggregateException(error, ex);
                     }
-                    else
-                    {
-                        throw;
-                    }
+                }
+
+                if (error is not null)
+                {
+                    throw error;
                 }
             }
             ,

@@ -131,17 +131,29 @@ namespace OoLunar.AsyncEvents
                     continue;
                 }
 
-                Type genericMethodType = method.ReturnType == typeof(ValueTask<bool>)
-                    ? typeof(AsyncEventPreHandler<>).MakeGenericType(parameters[0].ParameterType)
-                    : typeof(AsyncEventHandler<>).MakeGenericType(parameters[0].ParameterType);
-
-                if (method.IsStatic)
+                if (method.ReturnType == typeof(ValueTask<bool>))
                 {
-                    AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, type);
+                    Type genericMethodType = typeof(AsyncEventPreHandler<>).MakeGenericType(parameters[0].ParameterType);
+                    if (method.IsStatic)
+                    {
+                        AddPreHandler((AsyncEventPreHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
+                    }
+                    else if (target is not null)
+                    {
+                        AddPreHandler((AsyncEventPreHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
+                    }
                 }
-                else if (target is not null)
+                else
                 {
-                    AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, type);
+                    Type genericMethodType = typeof(AsyncEventHandler<>).MakeGenericType(parameters[0].ParameterType);
+                    if (method.IsStatic)
+                    {
+                        AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
+                    }
+                    else if (target is not null)
+                    {
+                        AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
+                    }
                 }
             }
         }
@@ -171,9 +183,10 @@ namespace OoLunar.AsyncEvents
         /// <param name="type">The type of the asynchronous event arguments.</param>
         public void AddPreHandler(AsyncEventPreHandler preHandler, AsyncEventPriority priority, Type type)
         {
-            if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
+            // Check if the type implements AsyncEventArgs
+            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {
-                throw new ArgumentException("Type must be a subclass of AsyncServerEventArgs", nameof(type));
+                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
             if (!_preHandlers.TryGetValue(type, out List<(object, AsyncEventPriority)>? preHandlers))
@@ -210,9 +223,9 @@ namespace OoLunar.AsyncEvents
         /// <param name="type">The type of the asynchronous event arguments.</param>
         public void AddPostHandler(AsyncEventHandler postHandler, AsyncEventPriority priority, Type type)
         {
-            if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
+            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {
-                throw new ArgumentException("Type must be a subclass of AsyncServerEventArgs", nameof(type));
+                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
             if (!_postHandlers.TryGetValue(type, out List<(object, AsyncEventPriority)>? postHandlers))
@@ -236,9 +249,9 @@ namespace OoLunar.AsyncEvents
         /// <param name="type">The type of the asynchronous event arguments.</param>
         public void ClearPreHandlers(Type type)
         {
-            if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
+            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {
-                throw new ArgumentException("Type must be a subclass of AsyncServerEventArgs", nameof(type));
+                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
             _preHandlers.Remove(type);
@@ -261,9 +274,9 @@ namespace OoLunar.AsyncEvents
         /// <param name="type">The type of the asynchronous event arguments.</param>
         public void ClearPostHandlers(Type type)
         {
-            if (type.IsAssignableFrom(typeof(AsyncEventArgs)))
+            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {
-                throw new ArgumentException("Type must be a subclass of AsyncServerEventArgs", nameof(type));
+                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
             _postHandlers.Remove(type);
