@@ -12,5 +12,9 @@
     <PackageTags>async events,async-events,async,events</PackageTags>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(ProjectRoot)/README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
 </Project>
