@@ -15,6 +15,8 @@ Async events for .NET
 
 `OoLunar.AsyncEvents` is available on [NuGet](https://www.nuget.org/packages/OoLunar.AsyncEvents/).
 
+Web documentation can be found at [https://oolunar.github.io/AsyncEvents/](https://oolunar.github.io/AsyncEvents/).
+
 ## Usage
 
 The async events design is based off of `DSharpPlus.Commands`'s context check system, and is designed to be used in a similar manner. There are two main concepts to understand: pre/post handlers, and the handler priority system.
