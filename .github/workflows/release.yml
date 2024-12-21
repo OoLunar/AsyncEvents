@@ -39,7 +39,7 @@ jobs:
       - name: Package Project
         run: |
           dotnet pack -c Release -o build
-          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_ORG_API_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
