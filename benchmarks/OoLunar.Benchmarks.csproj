@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)/src/OoLunar.AsyncEvents/OoLunar.AsyncEvents.csproj" />
+    <ProjectReference Include="$(ProjectRoot)/src/OoLunar.AsyncEvents/OoLunar.AsyncEvents.csproj" />
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
   </ItemGroup>
 </Project>

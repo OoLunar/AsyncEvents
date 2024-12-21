@@ -4,5 +4,6 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TargetFramework>net9.0</TargetFramework>
+    <ProjectRoot>$(MSBuildThisFileDirectory)</ProjectRoot>
   </PropertyGroup>
 </Project>

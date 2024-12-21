@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents
@@ -70,6 +72,59 @@ namespace OoLunar.AsyncEvents
         }
 
         /// <summary>
+        /// Searches the specified type for methods with the <see cref="AsyncEventHandlerAttribute"/> and registers them as pre/post-handlers.
+        /// </summary>
+        /// <param name="target">The target object to bind the methods to. If <see langword="null"/>, only static methods will be registered. If not <see langword="null"/>, the object will be reused when binding to the methods.</param>
+        /// <typeparam name="T">The type to search for methods marked with the <see cref="AsyncEventHandlerAttribute"/>.</typeparam>
+        public void AddHandlers<T>(object? target = null) => AddHandlers(typeof(T), target);
+
+        /// <summary>
+        /// Searches the specified type for methods with the <see cref="AsyncEventHandlerAttribute"/> and registers them as pre/post-handlers.
+        /// </summary>
+        /// <param name="type">The type to search for methods marked with the <see cref="AsyncEventHandlerAttribute"/>.</param>
+        /// <param name="target">The target object to bind the methods to. If <see langword="null"/>, only static methods will be registered. If not <see langword="null"/>, the object will be reused when binding to the methods.</param>
+        public void AddHandlers(Type type, object? target = null)
+        {
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
+
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                // If the method does not have the AsyncEventHandlerAttribute, skip the method
+                AsyncEventHandlerAttribute? attribute = method.GetCustomAttribute<AsyncEventHandlerAttribute>();
+                if (attribute is null)
+                {
+                    continue;
+                }
+
+                // If the return type is not a ValueTask or ValueTask<bool>, skip the method
+                if (method.ReturnType != typeof(ValueTask) && method.ReturnType != typeof(ValueTask<bool>))
+                {
+                    continue;
+                }
+
+                // Else if the method's signature does not match the expected signature, skip the method
+                ParameterInfo[] parameters = method.GetParameters();
+                if (parameters.Length != 1 || !parameters[0].ParameterType.IsSubclassOf(typeof(TEventArgs)))
+                {
+                    continue;
+                }
+
+                Type genericMethodType = method.ReturnType == typeof(ValueTask<bool>)
+                    ? typeof(AsyncEventPreHandler<>).MakeGenericType(parameters[0].ParameterType)
+                    : typeof(AsyncEventHandler<>).MakeGenericType(parameters[0].ParameterType);
+
+                if (method.IsStatic)
+                {
+                    AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority);
+                }
+                else if (target is not null)
+                {
+                    AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority);
+                }
+            }
+        }
+
+        /// <summary>
         /// Registers a new pre-handler with the specified priority.
         /// </summary>
         /// <remarks>
@@ -108,6 +163,16 @@ namespace OoLunar.AsyncEvents
         /// <param name="handler">The post-handler delegate to remove.</param>
         /// <returns><see langword="true"/> if the handler was successfully found and removed; otherwise, <see langword="false"/>.</returns>
         public bool RemovePostHandler(AsyncEventHandler<TEventArgs> handler) => _postHandlers.Remove(handler);
+
+        /// <summary>
+        /// Removes all pre-handlers from the event.
+        /// </summary>
+        public void ClearPreHandlers() => _preHandlers.Clear();
+
+        /// <summary>
+        /// Removes all post-handlers from the event.
+        /// </summary>
+        public void ClearPostHandlers() => _postHandlers.Clear();
 
         /// <summary>
         /// Invokes the event with the specified event arguments.
@@ -156,68 +221,178 @@ namespace OoLunar.AsyncEvents
         [SuppressMessage("Roslyn", "IDE0045", Justification = "Ternary rabbit hole.")]
         public void Prepare()
         {
-            List<AsyncEventPreHandler<TEventArgs>> preHandlers = _preHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToList();
-            List<AsyncEventHandler<TEventArgs>> postHandlers = _postHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToList();
+            _preEventHandlerDelegate = CreatePreHandlerDelegate(_preHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToArray());
+            _postEventHandlerDelegate = CreatePostHandlerDelegate(_postHandlers.OrderBy(x => x.Value).Select(x => x.Key).ToArray());
+        }
 
-            if (preHandlers.Count == 0)
+        private AsyncEventPreHandler<TEventArgs> CreatePreHandlerDelegate(AsyncEventPreHandler<TEventArgs>[] handlers) => handlers.Length switch
+        {
+            0 => EmptyPreHandler,
+            1 => handlers[0],
+            2 => async (TEventArgs eventArgs) =>
             {
-                _preEventHandlerDelegate = EmptyPreHandler;
-            }
-            else if (preHandlers.Count == 1)
-            {
-                _preEventHandlerDelegate = preHandlers[0];
-            }
-            else if (preHandlers.Count == 2)
-            {
-                _preEventHandlerDelegate = async ValueTask<bool> (TEventArgs eventArgs) => await preHandlers[0](eventArgs) && await preHandlers[1](eventArgs);
-            }
-            else if (!ParallelizationEnabled || preHandlers.Count < MinimumParallelHandlerCount)
-            {
-                _preEventHandlerDelegate = async eventArgs =>
+                Exception? error = null;
+                bool result = true;
+                try
                 {
-                    bool result = true;
-                    foreach (AsyncEventPreHandler<TEventArgs> handler in preHandlers)
+                    result &= await handlers[0](eventArgs);
+                }
+                catch (Exception ex)
+                {
+                    error = ex;
+                }
+
+                try
+                {
+                    result &= await handlers[1](eventArgs);
+                }
+                catch (Exception ex)
+                {
+                    if (error is not null)
+                    {
+                        throw new AggregateException(error, ex);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                return result;
+            }
+            ,
+            _ when !ParallelizationEnabled && handlers.Length > MinimumParallelHandlerCount => async (TEventArgs eventArgs) =>
+            {
+                bool result = true;
+                List<Exception> errors = [];
+                foreach (AsyncEventPreHandler<TEventArgs> handler in handlers)
+                {
+                    try
                     {
                         result &= await handler(eventArgs);
                     }
+                    catch (Exception error)
+                    {
+                        errors.Add(error);
+                    }
+                }
 
-                    return result;
+                return errors.Count switch
+                {
+                    0 => result,
+                    1 => throw errors[0],
+                    _ => throw new AggregateException(errors),
                 };
             }
-            else
+            ,
+            _ => async (TEventArgs eventArgs) =>
             {
-                _preEventHandlerDelegate = async (TEventArgs eventArgs) =>
+                bool result = true;
+                List<Exception> errors = [];
+                await Parallel.ForEachAsync(handlers, async (AsyncEventPreHandler<TEventArgs> handler, CancellationToken cancellationToken) =>
                 {
-                    bool result = true;
-                    await Parallel.ForEachAsync(preHandlers, async (handler, cancellationToken) => result &= await handler(eventArgs));
-                    return result;
+                    try
+                    {
+                        result &= await handler(eventArgs);
+                    }
+                    catch (Exception error)
+                    {
+                        errors.Add(error);
+                    }
+                });
+
+                return errors.Count switch
+                {
+                    0 => result,
+                    1 => throw errors[0],
+                    _ => throw new AggregateException(errors),
                 };
             }
+        };
 
-            if (postHandlers.Count == 0)
+        private AsyncEventHandler<TEventArgs> CreatePostHandlerDelegate(AsyncEventHandler<TEventArgs>[] handlers) => handlers.Length switch
+        {
+            0 => EmptyPostHandler,
+            1 => handlers[0],
+            2 => async (eventArgs) =>
             {
-                _postEventHandlerDelegate = EmptyPostHandler;
-            }
-            else if (postHandlers.Count == 1)
-            {
-                _postEventHandlerDelegate = postHandlers[0];
-            }
-            else if (!ParallelizationEnabled || postHandlers.Count < MinimumParallelHandlerCount)
-            {
-                _postEventHandlerDelegate = async (TEventArgs eventArgs) =>
+                Exception? error = null;
+                try
                 {
-                    foreach (AsyncEventHandler<TEventArgs> handler in postHandlers)
+                    await handlers[0](eventArgs);
+                }
+                catch (Exception ex)
+                {
+                    error = ex;
+                }
+
+                try
+                {
+                    await handlers[1](eventArgs);
+                }
+                catch (Exception ex)
+                {
+                    if (error is not null)
+                    {
+                        throw new AggregateException(error, ex);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+            ,
+            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => async (TEventArgs eventArgs) =>
+            {
+                List<Exception> errors = [];
+                foreach (AsyncEventHandler<TEventArgs> handler in handlers)
+                {
+                    try
                     {
                         await handler(eventArgs);
                     }
-                };
+                    catch (Exception error)
+                    {
+                        errors.Add(error);
+                    }
+                }
+
+                if (errors.Count == 1)
+                {
+                    throw errors[0];
+                }
+                else if (errors.Count > 1)
+                {
+                    throw new AggregateException(errors);
+                }
             }
-            else
+            ,
+            _ => async (TEventArgs eventArgs) =>
             {
-                _postEventHandlerDelegate = async (TEventArgs eventArgs) =>
-                    await Parallel.ForEachAsync(postHandlers, async (handler, cancellationToken) => await handler(eventArgs));
+                List<Exception> errors = [];
+                await Parallel.ForEachAsync(handlers, async (AsyncEventHandler<TEventArgs> handler, CancellationToken cancellationToken) =>
+                {
+                    try
+                    {
+                        await handler(eventArgs);
+                    }
+                    catch (Exception error)
+                    {
+                        errors.Add(error);
+                    }
+                });
+
+                if (errors.Count == 1)
+                {
+                    throw errors[0];
+                }
+                else if (errors.Count > 1)
+                {
+                    throw new AggregateException(errors);
+                }
             }
-        }
+        };
 
         private static ValueTask<bool> EmptyPreHandler(TEventArgs _) => ValueTask.FromResult(true);
         private static ValueTask EmptyPostHandler(TEventArgs _) => ValueTask.CompletedTask;

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)/src/OoLunar.AsyncEvents/OoLunar.AsyncEvents.csproj" />
+    <ProjectReference Include="$(ProjectRoot)/src/OoLunar.AsyncEvents/OoLunar.AsyncEvents.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="MSTest" Version="3.6.1" />
   </ItemGroup>
