@@ -97,8 +97,8 @@ namespace OoLunar.AsyncEvents.Tests
                 caught = true;
                 Assert.IsInstanceOfType<AggregateException>(error);
                 Assert.AreEqual(2, error.InnerExceptions.Count);
-                Assert.IsInstanceOfType<InvalidOperationException>(error.InnerExceptions[0]);
-                Assert.IsInstanceOfType<InvalidDataException>(error.InnerExceptions[1]);
+                Assert.IsInstanceOfType<InvalidDataException>(error.InnerExceptions[0]);
+                Assert.IsInstanceOfType<InvalidOperationException>(error.InnerExceptions[1]);
             }
 
             Assert.IsTrue(caught);

@@ -231,27 +231,65 @@ namespace OoLunar.AsyncEvents
         [SuppressMessage("Roslyn", "IDE0045", Justification = "Ternary rabbit hole.")]
         public void Prepare()
         {
-            _preEventHandlerDelegate = CreatePreHandlerDelegate(_preHandlers.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray());
-            _postEventHandlerDelegate = CreatePostHandlerDelegate(_postHandlers.OrderByDescending(x => x.Value).Select(x => x.Key).ToArray());
+            _preEventHandlerDelegate = CreatePreHandlerDelegate();
+            _postEventHandlerDelegate = CreatePostHandlerDelegate();
         }
 
-        private AsyncEventPreHandler<TEventArgs> CreatePreHandlerDelegate(AsyncEventPreHandler<TEventArgs>[] handlers) => handlers.Length switch
+        private AsyncEventPreHandler<TEventArgs> CreatePreHandlerDelegate()
         {
-            0 => EmptyPreHandler,
-            1 => handlers[0],
-            2 => new AsyncEventTwoPreHandlerClosure<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
-            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPreHandlerClosure<TEventArgs>(handlers).InvokeAsync,
-            _ => new AsyncEventParallelMultiPreHandlerClosure<TEventArgs>(handlers).InvokeAsync,
-        };
+            if (_preHandlers.Count == 0)
+            {
+                return EmptyPreHandler;
+            }
+            else if (_preHandlers.Count == 1)
+            {
+                return _preHandlers.Keys.First();
+            }
 
-        private AsyncEventPostHandler<TEventArgs> CreatePostHandlerDelegate(AsyncEventPostHandler<TEventArgs>[] handlers) => handlers.Length switch
+            AsyncEventPriority[] priorities = new AsyncEventPriority[_preHandlers.Count];
+            AsyncEventPreHandler<TEventArgs>[] preHandlers = new AsyncEventPreHandler<TEventArgs>[_preHandlers.Count];
+
+            _preHandlers.Values.CopyTo(priorities, 0);
+            _preHandlers.Keys.CopyTo(preHandlers, 0);
+
+            Array.Reverse(priorities);
+            Array.Sort(priorities, preHandlers);
+
+            return preHandlers.Length switch
+            {
+                2 => new AsyncEventTwoPreHandlerClosure<TEventArgs>(preHandlers[0], preHandlers[1]).InvokeAsync,
+                _ when !ParallelizationEnabled || preHandlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPreHandlerClosure<TEventArgs>(preHandlers).InvokeAsync,
+                _ => new AsyncEventParallelMultiPreHandlerClosure<TEventArgs>(preHandlers).InvokeAsync,
+            };
+        }
+
+        private AsyncEventPostHandler<TEventArgs> CreatePostHandlerDelegate()
         {
-            0 => EmptyPostHandler,
-            1 => handlers[0],
-            2 => new AsyncEventTwoPostHandlerClosure<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
-            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPostHandlerClosure<TEventArgs>(handlers).InvokeAsync,
-            _ => new AsyncEventParallelMultiPostHandlerClosure<TEventArgs>(handlers).InvokeAsync,
-        };
+            if (_postHandlers.Count == 0)
+            {
+                return EmptyPostHandler;
+            }
+            else if (_postHandlers.Count == 1)
+            {
+                return _postHandlers.Keys.First();
+            }
+
+            AsyncEventPriority[] priorities = new AsyncEventPriority[_postHandlers.Count];
+            AsyncEventPostHandler<TEventArgs>[] postHandlers = new AsyncEventPostHandler<TEventArgs>[_postHandlers.Count];
+
+            _postHandlers.Values.CopyTo(priorities, 0);
+            _postHandlers.Keys.CopyTo(postHandlers, 0);
+
+            Array.Reverse(priorities);
+            Array.Sort(priorities, postHandlers);
+
+            return postHandlers.Length switch
+            {
+                2 => new AsyncEventTwoPostHandlerClosure<TEventArgs>(postHandlers[0], postHandlers[1]).InvokeAsync,
+                _ when !ParallelizationEnabled || postHandlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPostHandlerClosure<TEventArgs>(postHandlers).InvokeAsync,
+                _ => new AsyncEventParallelMultiPostHandlerClosure<TEventArgs>(postHandlers).InvokeAsync,
+            };
+        }
 
         private static ValueTask<bool> EmptyPreHandler(TEventArgs _) => ValueTask.FromResult(true);
         private static ValueTask EmptyPostHandler(TEventArgs _) => ValueTask.CompletedTask;
