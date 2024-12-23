@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
+using OoLunar.AsyncEvents.AsyncEventClosures;
 
 namespace OoLunar.AsyncEvents
 {
@@ -239,166 +239,18 @@ namespace OoLunar.AsyncEvents
         {
             0 => EmptyPreHandler,
             1 => handlers[0],
-            2 => async (TEventArgs eventArgs) =>
-            {
-                Exception? error = null;
-                bool result = true;
-                try
-                {
-                    result &= await handlers[0](eventArgs);
-                }
-                catch (Exception ex)
-                {
-                    error = ex;
-                }
-
-                try
-                {
-                    result &= await handlers[1](eventArgs);
-                }
-                catch (Exception ex)
-                {
-                    if (error is not null)
-                    {
-                        throw new AggregateException(error, ex);
-                    }
-                }
-
-                return error is not null ? throw error : result;
-            }
-            ,
-            _ when !ParallelizationEnabled && handlers.Length > MinimumParallelHandlerCount => async (TEventArgs eventArgs) =>
-            {
-                bool result = true;
-                List<Exception> errors = [];
-                foreach (AsyncEventPreHandler<TEventArgs> handler in handlers)
-                {
-                    try
-                    {
-                        result &= await handler(eventArgs);
-                    }
-                    catch (Exception error)
-                    {
-                        errors.Add(error);
-                    }
-                }
-
-                return errors.Count switch
-                {
-                    0 => result,
-                    1 => throw errors[0],
-                    _ => throw new AggregateException(errors),
-                };
-            }
-            ,
-            _ => async (TEventArgs eventArgs) =>
-            {
-                bool result = true;
-                List<Exception> errors = [];
-                await Parallel.ForEachAsync(handlers, async (AsyncEventPreHandler<TEventArgs> handler, CancellationToken cancellationToken) =>
-                {
-                    try
-                    {
-                        result &= await handler(eventArgs);
-                    }
-                    catch (Exception error)
-                    {
-                        errors.Add(error);
-                    }
-                });
-
-                return errors.Count switch
-                {
-                    0 => result,
-                    1 => throw errors[0],
-                    _ => throw new AggregateException(errors),
-                };
-            }
+            2 => new AsyncEventTwoPreHandlerClosure<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
+            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPreHandlerClosure<TEventArgs>(handlers).InvokeAsync,
+            _ => new AsyncEventParallelMultiPreHandlerClosure<TEventArgs>(handlers).InvokeAsync,
         };
 
         private AsyncEventHandler<TEventArgs> CreatePostHandlerDelegate(AsyncEventHandler<TEventArgs>[] handlers) => handlers.Length switch
         {
             0 => EmptyPostHandler,
             1 => handlers[0],
-            2 => async (eventArgs) =>
-            {
-                Exception? error = null;
-                try
-                {
-                    await handlers[0](eventArgs);
-                }
-                catch (Exception ex)
-                {
-                    error = ex;
-                }
-
-                try
-                {
-                    await handlers[1](eventArgs);
-                }
-                catch (Exception ex)
-                {
-                    if (error is not null)
-                    {
-                        throw new AggregateException(error, ex);
-                    }
-                }
-
-                if (error is not null)
-                {
-                    throw error;
-                }
-            }
-            ,
-            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => async (TEventArgs eventArgs) =>
-            {
-                List<Exception> errors = [];
-                foreach (AsyncEventHandler<TEventArgs> handler in handlers)
-                {
-                    try
-                    {
-                        await handler(eventArgs);
-                    }
-                    catch (Exception error)
-                    {
-                        errors.Add(error);
-                    }
-                }
-
-                if (errors.Count == 1)
-                {
-                    throw errors[0];
-                }
-                else if (errors.Count > 1)
-                {
-                    throw new AggregateException(errors);
-                }
-            }
-            ,
-            _ => async (TEventArgs eventArgs) =>
-            {
-                List<Exception> errors = [];
-                await Parallel.ForEachAsync(handlers, async (AsyncEventHandler<TEventArgs> handler, CancellationToken cancellationToken) =>
-                {
-                    try
-                    {
-                        await handler(eventArgs);
-                    }
-                    catch (Exception error)
-                    {
-                        errors.Add(error);
-                    }
-                });
-
-                if (errors.Count == 1)
-                {
-                    throw errors[0];
-                }
-                else if (errors.Count > 1)
-                {
-                    throw new AggregateException(errors);
-                }
-            }
+            2 => new AsyncEventTwoPostHandlerClosure<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
+            _ when !ParallelizationEnabled || handlers.Length < MinimumParallelHandlerCount => new AsyncEventMultiPostHandlerClosure<TEventArgs>(handlers).InvokeAsync,
+            _ => new AsyncEventParallelMultiPostHandlerClosure<TEventArgs>(handlers).InvokeAsync,
         };
 
         private static ValueTask<bool> EmptyPreHandler(TEventArgs _) => ValueTask.FromResult(true);
