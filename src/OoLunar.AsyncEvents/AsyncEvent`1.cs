@@ -39,13 +39,13 @@ namespace OoLunar.AsyncEvents
         /// <summary>
         /// A read-only dictionary of currently registered post-handlers and their priorities.
         /// </summary>
-        public IReadOnlyDictionary<AsyncEventHandler<TEventArgs>, AsyncEventPriority> PostHandlers => _postHandlers;
+        public IReadOnlyDictionary<AsyncEventPostHandler<TEventArgs>, AsyncEventPriority> PostHandlers => _postHandlers;
 
         private readonly Dictionary<AsyncEventPreHandler<TEventArgs>, AsyncEventPriority> _preHandlers = [];
-        private readonly Dictionary<AsyncEventHandler<TEventArgs>, AsyncEventPriority> _postHandlers = [];
+        private readonly Dictionary<AsyncEventPostHandler<TEventArgs>, AsyncEventPriority> _postHandlers = [];
 
         private AsyncEventPreHandler<TEventArgs> _preEventHandlerDelegate;
-        private AsyncEventHandler<TEventArgs> _postEventHandlerDelegate;
+        private AsyncEventPostHandler<TEventArgs> _postEventHandlerDelegate;
 
         /// <summary>
         /// Creates a new instance of <see cref="AsyncEvent{TEventArgs}"/> with parallelization disabled.
@@ -124,11 +124,11 @@ namespace OoLunar.AsyncEvents
                 {
                     if (method.IsStatic)
                     {
-                        AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventHandler<TEventArgs>), method), attribute.Priority);
+                        AddPostHandler((AsyncEventPostHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPostHandler<TEventArgs>), method), attribute.Priority);
                     }
                     else if (target is not null)
                     {
-                        AddPostHandler((AsyncEventHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventHandler<TEventArgs>), target, method), attribute.Priority);
+                        AddPostHandler((AsyncEventPostHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPostHandler<TEventArgs>), target, method), attribute.Priority);
                     }
                 }
             }
@@ -152,7 +152,7 @@ namespace OoLunar.AsyncEvents
         /// </remarks>
         /// <param name="handler">The post-handler delegate to register.</param>
         /// <param name="priority">The priority of the handler. Handlers with higher priority will be invoked first.</param>
-        public void AddPostHandler(AsyncEventHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal) => _postHandlers[handler] = priority;
+        public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal) => _postHandlers[handler] = priority;
 
         /// <summary>
         /// Removes a pre-handler from the event.
@@ -172,7 +172,7 @@ namespace OoLunar.AsyncEvents
         /// </remarks>
         /// <param name="handler">The post-handler delegate to remove.</param>
         /// <returns><see langword="true"/> if the handler was successfully found and removed; otherwise, <see langword="false"/>.</returns>
-        public bool RemovePostHandler(AsyncEventHandler<TEventArgs> handler) => _postHandlers.Remove(handler);
+        public bool RemovePostHandler(AsyncEventPostHandler<TEventArgs> handler) => _postHandlers.Remove(handler);
 
         /// <summary>
         /// Removes all pre-handlers from the event.
@@ -244,7 +244,7 @@ namespace OoLunar.AsyncEvents
             _ => new AsyncEventParallelMultiPreHandlerClosure<TEventArgs>(handlers).InvokeAsync,
         };
 
-        private AsyncEventHandler<TEventArgs> CreatePostHandlerDelegate(AsyncEventHandler<TEventArgs>[] handlers) => handlers.Length switch
+        private AsyncEventPostHandler<TEventArgs> CreatePostHandlerDelegate(AsyncEventPostHandler<TEventArgs>[] handlers) => handlers.Length switch
         {
             0 => EmptyPostHandler,
             1 => handlers[0],

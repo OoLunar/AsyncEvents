@@ -24,7 +24,7 @@ namespace OoLunar.AsyncEvents.Benchmarks.Posthandlers
                 int j = 0;
                 while (j < i)
                 {
-                    asyncEvent.AddPostHandler(preHandler.Compile().Method.CreateDelegate<AsyncEventHandler<AsyncEventArgs>>());
+                    asyncEvent.AddPostHandler(preHandler.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>());
                     j++;
                 }
 

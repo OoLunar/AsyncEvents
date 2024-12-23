@@ -7,9 +7,9 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
 {
     internal class AsyncEventParallelMultiPostHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
-        private readonly AsyncEventHandler<TAsyncEventArgs>[] _handlers;
+        private readonly AsyncEventPostHandler<TAsyncEventArgs>[] _handlers;
 
-        public AsyncEventParallelMultiPostHandlerClosure(AsyncEventHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
+        public AsyncEventParallelMultiPostHandlerClosure(AsyncEventPostHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
 
         public async ValueTask InvokeAsync(TAsyncEventArgs eventArgs)
         {

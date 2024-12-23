@@ -56,7 +56,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void AddPostHandler_ShouldRegisterHandler()
         {
             static ValueTask handler(AsyncEventArgs args) => default;
-            _container.AddPostHandler((AsyncEventHandler<AsyncEventArgs>)handler, AsyncEventPriority.Normal);
+            _container.AddPostHandler((AsyncEventPostHandler<AsyncEventArgs>)handler, AsyncEventPriority.Normal);
 
             AsyncEvent<AsyncEventArgs> asyncEvent = _container.GetAsyncEvent<AsyncEventArgs>();
             Assert.IsTrue(asyncEvent.PostHandlers.ContainsKey(handler));
@@ -77,7 +77,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void ClearPostHandlers_ShouldRemoveAllPostHandlers()
         {
             static ValueTask handler(AsyncEventArgs args) => default;
-            _container.AddPostHandler((AsyncEventHandler<AsyncEventArgs>)handler, AsyncEventPriority.Normal);
+            _container.AddPostHandler((AsyncEventPostHandler<AsyncEventArgs>)handler, AsyncEventPriority.Normal);
             _container.ClearPostHandlers<AsyncEventArgs>();
 
             AsyncEvent<AsyncEventArgs> asyncEvent = _container.GetAsyncEvent<AsyncEventArgs>();
@@ -91,7 +91,7 @@ namespace OoLunar.AsyncEvents.Tests
             static ValueTask postHandler(AsyncEventArgs args) => default;
 
             _container.AddPreHandler((AsyncEventPreHandler<AsyncEventArgs>)preHandler, AsyncEventPriority.High);
-            _container.AddPostHandler((AsyncEventHandler<AsyncEventArgs>)postHandler, AsyncEventPriority.Low);
+            _container.AddPostHandler((AsyncEventPostHandler<AsyncEventArgs>)postHandler, AsyncEventPriority.Low);
             _container.Prepare<AsyncEventArgs>();
 
             AsyncEvent<AsyncEventArgs> asyncEvent = _container.GetAsyncEvent<AsyncEventArgs>();

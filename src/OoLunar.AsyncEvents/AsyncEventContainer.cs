@@ -69,7 +69,7 @@ namespace OoLunar.AsyncEvents
                 foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
                 {
                     // Cannot use 'postHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
-                    asyncServerEvent.AddPostHandler((AsyncEventHandler<T>)postHandler, priority);
+                    asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
                 }
             }
 
@@ -95,7 +95,7 @@ namespace OoLunar.AsyncEvents
 
             foreach ((object postHandler, AsyncEventPriority priority) in _postHandlers[typeof(T)])
             {
-                asyncServerEvent.AddPostHandler((AsyncEventHandler<T>)postHandler, priority);
+                asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
             }
 
             asyncServerEvent.Prepare();
@@ -145,14 +145,14 @@ namespace OoLunar.AsyncEvents
                 }
                 else
                 {
-                    Type genericMethodType = typeof(AsyncEventHandler<>).MakeGenericType(parameters[0].ParameterType);
+                    Type genericMethodType = typeof(AsyncEventPostHandler<>).MakeGenericType(parameters[0].ParameterType);
                     if (method.IsStatic)
                     {
-                        AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
+                        AddPostHandler((AsyncEventPostHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
                     }
                     else if (target is not null)
                     {
-                        AddPostHandler((AsyncEventHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
+                        AddPostHandler((AsyncEventPostHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
                     }
                 }
             }
@@ -204,7 +204,7 @@ namespace OoLunar.AsyncEvents
         /// <param name="postHandler">The asynchronous event handler to register.</param>
         /// <param name="priority">The priority of the event handler.</param>
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
-        public void AddPostHandler<T>(AsyncEventHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
+        public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
             if (!_postHandlers.TryGetValue(typeof(T), out List<(object, AsyncEventPriority)>? postHandlers))
             {
@@ -221,7 +221,7 @@ namespace OoLunar.AsyncEvents
         /// <param name="postHandler">The asynchronous event handler to register.</param>
         /// <param name="priority">The priority of the event handler.</param>
         /// <param name="type">The type of the asynchronous event arguments.</param>
-        public void AddPostHandler(AsyncEventHandler postHandler, AsyncEventPriority priority, Type type)
+        public void AddPostHandler(AsyncEventPostHandler postHandler, AsyncEventPriority priority, Type type)
         {
             if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
             {

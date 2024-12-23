@@ -5,10 +5,10 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
 {
     internal class AsyncEventTwoPostHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
-        private readonly AsyncEventHandler<TAsyncEventArgs> _handler1;
-        private readonly AsyncEventHandler<TAsyncEventArgs> _handler2;
+        private readonly AsyncEventPostHandler<TAsyncEventArgs> _handler1;
+        private readonly AsyncEventPostHandler<TAsyncEventArgs> _handler2;
 
-        public AsyncEventTwoPostHandlerClosure(AsyncEventHandler<TAsyncEventArgs> handler1, AsyncEventHandler<TAsyncEventArgs> handler2)
+        public AsyncEventTwoPostHandlerClosure(AsyncEventPostHandler<TAsyncEventArgs> handler1, AsyncEventPostHandler<TAsyncEventArgs> handler2)
         {
             _handler1 = handler1;
             _handler2 = handler2;
