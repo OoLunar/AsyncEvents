@@ -12,8 +12,8 @@ namespace OoLunar.AsyncEvents
     public sealed class AsyncEventContainer
     {
         private readonly Dictionary<Type, object> _serverEvents = [];
-        private readonly Dictionary<Type, List<(object, AsyncEventPriority)>> _postHandlers = [];
-        private readonly Dictionary<Type, List<(object, AsyncEventPriority)>> _preHandlers = [];
+        private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _postHandlers = [];
+        private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _preHandlers = [];
 
         /// <inheritdoc cref="AsyncEvent{T}.ParallelizationEnabled"/>
         public bool ParallelizationEnabled { get; init; }
@@ -55,7 +55,7 @@ namespace OoLunar.AsyncEvents
             }
 
             AsyncEvent<T> asyncServerEvent = new(ParallelizationEnabled, MinimumParallelHandlerCount);
-            if (_preHandlers.TryGetValue(typeof(T), out List<(object, AsyncEventPriority)>? preHandlers))
+            if (_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
             {
                 foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
                 {
@@ -64,7 +64,7 @@ namespace OoLunar.AsyncEvents
                 }
             }
 
-            if (_postHandlers.TryGetValue(typeof(T), out List<(object, AsyncEventPriority)>? postHandlers))
+            if (_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
             {
                 foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
                 {
@@ -166,13 +166,13 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            if (!_preHandlers.TryGetValue(typeof(T), out List<(object, AsyncEventPriority)>? preHandlers))
+            if (!_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
             {
                 preHandlers = [];
                 _preHandlers.Add(typeof(T), preHandlers);
             }
 
-            preHandlers.Add((preHandler, priority));
+            preHandlers.Add(preHandler, priority);
         }
 
         /// <summary>
@@ -189,13 +189,13 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            if (!_preHandlers.TryGetValue(type, out List<(object, AsyncEventPriority)>? preHandlers))
+            if (!_preHandlers.TryGetValue(type, out Dictionary<object, AsyncEventPriority>? preHandlers))
             {
                 preHandlers = [];
                 _preHandlers.Add(type, preHandlers);
             }
 
-            preHandlers.Add((preHandler, priority));
+            preHandlers.Add(preHandler, priority);
         }
 
         /// <summary>
@@ -206,13 +206,13 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            if (!_postHandlers.TryGetValue(typeof(T), out List<(object, AsyncEventPriority)>? postHandlers))
+            if (!_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
             {
                 postHandlers = [];
                 _postHandlers.Add(typeof(T), postHandlers);
             }
 
-            postHandlers.Add((postHandler, priority));
+            postHandlers.Add(postHandler, priority);
         }
 
         /// <summary>
@@ -228,13 +228,13 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            if (!_postHandlers.TryGetValue(type, out List<(object, AsyncEventPriority)>? postHandlers))
+            if (!_postHandlers.TryGetValue(type, out Dictionary<object, AsyncEventPriority>? postHandlers))
             {
                 postHandlers = [];
                 _postHandlers.Add(type, postHandlers);
             }
 
-            postHandlers.Add((postHandler, priority));
+            postHandlers.Add(postHandler, priority);
         }
 
         /// <summary>
