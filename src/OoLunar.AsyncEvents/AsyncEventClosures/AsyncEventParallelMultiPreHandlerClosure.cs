@@ -14,7 +14,7 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
         public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs)
         {
             bool result = true;
-            List<Exception> errors = [];
+            List<Exception>? errors = null;
             await Parallel.ForAsync(0, _handlers.Length, async (int i, CancellationToken cancellationToken) =>
             {
                 try
@@ -23,20 +23,17 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
                 }
                 catch (Exception error)
                 {
+                    errors ??= [];
                     errors.Add(error);
                 }
             });
 
-            if (errors.Count == 1)
+            return errors?.Count switch
             {
-                throw errors[0];
-            }
-            else if (errors.Count > 1)
-            {
-                throw new AggregateException(errors);
-            }
-
-            return result;
+                null => result,
+                1 => throw errors[0],
+                _ => throw new AggregateException(errors)
+            };
         }
     }
 }

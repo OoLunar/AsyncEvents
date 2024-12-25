@@ -12,7 +12,7 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
 
         public async ValueTask InvokeAsync(TAsyncEventArgs eventArgs)
         {
-            List<Exception> errors = [];
+            List<Exception>? errors = null;
             for (int i = 0; i < _handlers.Length; i++)
             {
                 try
@@ -21,18 +21,17 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
                 }
                 catch (Exception error)
                 {
+                    errors ??= [];
                     errors.Add(error);
                 }
             }
 
-            if (errors.Count == 1)
+            if (errors is null)
             {
-                throw errors[0];
+                return;
             }
-            else if (errors.Count > 1)
-            {
-                throw new AggregateException(errors);
-            }
+
+            throw errors.Count is 1 ? errors[0] : new AggregateException(errors);
         }
     }
 }

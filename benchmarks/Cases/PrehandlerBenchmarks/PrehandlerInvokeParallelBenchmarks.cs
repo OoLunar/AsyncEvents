@@ -35,7 +35,5 @@ namespace OoLunar.AsyncEvents.Benchmarks.Prehandlers
                 yield return [asyncEvent, eventArgs, i];
             }
         }
-
-        private static ValueTask<bool> EmptyPreHandler(AsyncEventArgs _) => new(true);
     }
 }

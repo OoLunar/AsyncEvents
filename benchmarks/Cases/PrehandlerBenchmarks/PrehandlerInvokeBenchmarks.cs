@@ -20,7 +20,7 @@ namespace OoLunar.AsyncEvents.Benchmarks.Prehandlers
             Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandler = eventArgs => new ValueTask<bool>(true);
 
             AsyncEventArgs eventArgs = new();
-            foreach (int i in Enumerable.Range(0, Environment.ProcessorCount + 1).Where(x => x % 4 == 0).Append(1).Append(2).Append(5).Append(3).OrderByDescending(x => x))
+            foreach (int i in Enumerable.Range(0, Environment.ProcessorCount + 1).Where(x => x % 4 == 0).Append(1).Append(2).Append(3).Append(5).OrderByDescending(x => x))
             {
                 AsyncEvent<AsyncEventArgs> asyncEvent = new();
 
@@ -35,7 +35,5 @@ namespace OoLunar.AsyncEvents.Benchmarks.Prehandlers
                 yield return [asyncEvent, eventArgs, i];
             }
         }
-
-        private static ValueTask<bool> EmptyPreHandler(AsyncEventArgs _) => new(true);
     }
 }

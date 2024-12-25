@@ -9,11 +9,11 @@ namespace OoLunar.AsyncEvents.Benchmarks.Posthandlers
 {
     public class PosthandlerInvokeParallelBenchmarks
     {
-        [Benchmark, ArgumentsSource(nameof(InvokePreHandlersData))]
+        [Benchmark, ArgumentsSource(nameof(InvokePostHandlersData))]
         public async ValueTask InvokePostHandlersParallelAsync(AsyncEvent<AsyncEventArgs> asyncEvent, AsyncEventArgs asyncEventArgs, int eventHandlerCount)
             => await asyncEvent.InvokePostHandlersAsync(asyncEventArgs);
 
-        public static IEnumerable<object[]> InvokePreHandlersData()
+        public static IEnumerable<object[]> InvokePostHandlersData()
         {
             // Generate a anonymous delegate through expressions, since adding
             // the same delegate multiple times will throw an exception
@@ -35,7 +35,5 @@ namespace OoLunar.AsyncEvents.Benchmarks.Posthandlers
                 yield return [asyncEvent, eventArgs, i];
             }
         }
-
-        private static ValueTask<bool> EmptyPreHandler(AsyncEventArgs _) => new(true);
     }
 }
