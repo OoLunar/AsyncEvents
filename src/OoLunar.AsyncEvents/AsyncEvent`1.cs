@@ -11,7 +11,7 @@ namespace OoLunar.AsyncEvents
     /// <summary>
     /// An asynchronous event that can be subscribed to and invoked.
     /// </summary>
-    public sealed record AsyncEvent<TEventArgs> where TEventArgs : AsyncEventArgs
+    public sealed record AsyncEvent<TEventArgs> : IAsyncEvent<TEventArgs> where TEventArgs : AsyncEventArgs
     {
         /// <summary>
         /// Whether to parallelize the invocation of handlers. If <see langword="true"/>, the event will invoke all handlers in parallel through <see cref="Parallel.ForEachAsync{TSource}(IAsyncEnumerable{TSource}, Func{TSource, System.Threading.CancellationToken, ValueTask})"/>.
