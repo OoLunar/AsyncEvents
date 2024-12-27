@@ -2,6 +2,7 @@
   <PropertyGroup Label="Build Properties">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
+    <PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(ProjectRoot)/CHANGELOG.md'))</PackageReleaseNotes>
   </PropertyGroup>
   <PropertyGroup Label="Nuget">
     <PackageId>OoLunar.AsyncEvents</PackageId>
