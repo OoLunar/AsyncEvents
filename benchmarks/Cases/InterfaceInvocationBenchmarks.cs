@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
@@ -12,15 +11,15 @@ namespace OoLunar.AsyncEvents.Benchmarks
         public sealed class MyAsyncEventArgs : AsyncEventArgs;
 
         [Benchmark, ArgumentsSource(nameof(GenerateData))]
-        public async ValueTask InvokePreHandlersAsync(IAsyncEvent<MyAsyncEventArgs> asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
-            => await asyncEvent.InvokePreHandlersAsync(asyncEventArgs);
+        public ValueTask<bool> InterfaceAsync(IAsyncEvent asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
+            => asyncEvent.InvokeAsync(asyncEventArgs);
 
         [Benchmark, ArgumentsSource(nameof(GenerateData))]
-        public async ValueTask InvokePostHandlersAsync(IAsyncEvent<MyAsyncEventArgs> asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
-            => await asyncEvent.InvokePostHandlersAsync(asyncEventArgs);
+        public async ValueTask GenericInterfaceAsync(IAsyncEvent<MyAsyncEventArgs> asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
+            => await asyncEvent.InvokeAsync(asyncEventArgs);
 
         [Benchmark, ArgumentsSource(nameof(GenerateData))]
-        public async ValueTask InvokeAsync(IAsyncEvent<MyAsyncEventArgs> asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
+        public async ValueTask InvokeAsync(AsyncEvent<MyAsyncEventArgs> asyncEvent, MyAsyncEventArgs asyncEventArgs, int eventHandlerCount)
             => await asyncEvent.InvokeAsync(asyncEventArgs);
 
         public IEnumerable<object[]> GenerateData()
@@ -31,15 +30,15 @@ namespace OoLunar.AsyncEvents.Benchmarks
             Expression<Func<AsyncEventArgs, ValueTask>> postHandler = eventArgs => ValueTask.CompletedTask;
 
             MyAsyncEventArgs eventArgs = new();
-            foreach (int i in Enumerable.Range(0, Environment.ProcessorCount + 1).Where(x => x % 4 == 0).Append(1).Append(2).Append(3).Append(5).OrderByDescending(x => x))
+            foreach (int i in new int[] { 0, 2 })
             {
-                AsyncEvent<AsyncEventArgs> asyncEvent = new();
+                AsyncEvent<MyAsyncEventArgs> asyncEvent = new();
 
                 int j = 0;
                 while (j < i)
                 {
-                    asyncEvent.AddPreHandler(preHandler.Compile().Method.CreateDelegate<AsyncEventPreHandler<AsyncEventArgs>>());
-                    asyncEvent.AddPostHandler(postHandler.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>());
+                    asyncEvent.AddPreHandler(preHandler.Compile().Method.CreateDelegate<AsyncEventPreHandler<MyAsyncEventArgs>>());
+                    asyncEvent.AddPostHandler(postHandler.Compile().Method.CreateDelegate<AsyncEventPostHandler<MyAsyncEventArgs>>());
                     j++;
                 }
 

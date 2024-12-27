@@ -26,8 +26,34 @@ namespace OoLunar.AsyncEvents
             return true;
         }
 
-        ValueTask<bool> IAsyncEvent.InvokePreHandlersAsync(AsyncEventArgs eventArgs) => InvokePreHandlersAsync((TEventArgs)eventArgs);
-        ValueTask IAsyncEvent.InvokePostHandlersAsync(AsyncEventArgs eventArgs) => InvokePostHandlersAsync((TEventArgs)eventArgs);
-        ValueTask<bool> IAsyncEvent.InvokeAsync(AsyncEventArgs eventArgs) => InvokeAsync((TEventArgs)eventArgs);
+        ValueTask<bool> IAsyncEvent.InvokePreHandlersAsync(AsyncEventArgs eventArgs)
+        {
+            if (eventArgs is not TEventArgs typedEventArgs)
+            {
+                typedEventArgs = (TEventArgs)eventArgs;
+            }
+
+            return InvokePreHandlersAsync(typedEventArgs);
+        }
+
+        ValueTask IAsyncEvent.InvokePostHandlersAsync(AsyncEventArgs eventArgs)
+        {
+            if (eventArgs is not TEventArgs typedEventArgs)
+            {
+                typedEventArgs = (TEventArgs)eventArgs;
+            }
+
+            return InvokePostHandlersAsync(typedEventArgs);
+        }
+
+        ValueTask<bool> IAsyncEvent.InvokeAsync(AsyncEventArgs eventArgs)
+        {
+            if (eventArgs is not TEventArgs typedEventArgs)
+            {
+                typedEventArgs = (TEventArgs)eventArgs;
+            }
+
+            return InvokeAsync(typedEventArgs);
+        }
     }
 }
