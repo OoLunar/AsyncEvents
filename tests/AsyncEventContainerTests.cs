@@ -43,6 +43,15 @@ namespace OoLunar.AsyncEvents.Tests
         }
 
         [TestMethod]
+        public void GetAsyncEvent_NonGeneric_ShouldReturnPreparedAsyncEvent()
+        {
+            Type asyncEventArgsType = typeof(AsyncEventArgs);
+            IAsyncEvent asyncEvent = _container.GetAsyncEvent(asyncEventArgsType);
+            AsyncEvent<AsyncEventArgs> asyncEventGeneric = _container.GetAsyncEvent<AsyncEventArgs>();
+            Assert.AreEqual(asyncEvent, asyncEventGeneric);
+        }
+
+        [TestMethod]
         public void AddPreHandler_ShouldRegisterHandler()
         {
             static ValueTask<bool> handler(AsyncEventArgs args) => new(true);

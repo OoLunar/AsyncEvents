@@ -11,7 +11,9 @@ namespace OoLunar.AsyncEvents
     /// </summary>
     public sealed class AsyncEventContainer
     {
-        private readonly Dictionary<Type, object> _serverEvents = [];
+        private static readonly MethodInfo _getAsyncEventGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(GetAsyncEvent), BindingFlags.Public | BindingFlags.Instance, [])!;
+
+        private readonly Dictionary<Type, IAsyncEvent> _serverEvents = [];
         private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _postHandlers = [];
         private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _preHandlers = [];
 
@@ -49,7 +51,7 @@ namespace OoLunar.AsyncEvents
         /// <returns>A prepared asynchronous event of the specified type with the appropriate handlers.</returns>
         public AsyncEvent<T> GetAsyncEvent<T>() where T : AsyncEventArgs
         {
-            if (_serverEvents.TryGetValue(typeof(T), out object? value))
+            if (_serverEvents.TryGetValue(typeof(T), out IAsyncEvent? value))
             {
                 return (AsyncEvent<T>)value;
             }
@@ -76,6 +78,34 @@ namespace OoLunar.AsyncEvents
             asyncServerEvent.Prepare();
             _serverEvents.Add(typeof(T), asyncServerEvent);
             return asyncServerEvent;
+        }
+
+        /// <summary>
+        /// Finds or lazily creates an asynchronous event of the specified type.
+        /// </summary>
+        /// <remarks>
+        /// If the async event does not exist, there will be a notable performance
+        /// hit as the event is created and prepared through reflection. Try to use
+        /// this method only when you know the event exists. Otherwise, prefer using
+        /// the generic method <see cref="GetAsyncEvent{T}"/>.
+        /// </remarks>
+        /// <param name="type">The type of the asynchronous event arguments.</param>
+        /// <returns>A prepared asynchronous event of the specified type with the appropriate handlers.</returns>
+        public IAsyncEvent GetAsyncEvent(Type type)
+        {
+            ArgumentNullException.ThrowIfNull(type, nameof(type));
+            if (type != typeof(AsyncEventArgs) && !type.IsSubclassOf(typeof(AsyncEventArgs)))
+            {
+                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
+            }
+            else if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
+            {
+                return value;
+            }
+
+            // Call GetAsyncEvent<T> through reflection
+            MethodInfo genericMethod = _getAsyncEventGenericMethod.MakeGenericMethod(type);
+            return (IAsyncEvent)genericMethod.Invoke(this, [])!;
         }
 
         /// <summary>
