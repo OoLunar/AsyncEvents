@@ -3,13 +3,6 @@ using System.Threading.Tasks;
 namespace OoLunar.AsyncEvents
 {
     /// <summary>
-    /// A non-generic form of <see cref="AsyncEventPostHandler{T}"/>.
-    /// </summary>
-    /// <param name="eventArgs">The event arguments.</param>
-    /// <returns>Whether the event should be "cancelled".</returns>
-    public delegate ValueTask<bool> AsyncEventPreHandler(AsyncEventArgs eventArgs);
-
-    /// <summary>
     /// Represents a method/delegate that handles an asynchronous event.
     /// </summary>
     /// <param name="eventArgs">The event arguments.</param>

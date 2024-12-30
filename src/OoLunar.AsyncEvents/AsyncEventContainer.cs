@@ -12,6 +12,8 @@ namespace OoLunar.AsyncEvents
     public sealed class AsyncEventContainer
     {
         private static readonly MethodInfo _getAsyncEventGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(GetAsyncEvent), BindingFlags.Public | BindingFlags.Instance, [])!;
+        private static readonly MethodInfo _addPreHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPreHandler), BindingFlags.Public | BindingFlags.Instance)!;
+        private static readonly MethodInfo _addPostHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPostHandler), BindingFlags.Public | BindingFlags.Instance)!;
 
         private readonly Dictionary<Type, IAsyncEvent> _serverEvents = [];
         private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _postHandlers = [];
@@ -156,7 +158,7 @@ namespace OoLunar.AsyncEvents
 
                 // Else if the method's signature does not match the expected signature, skip the method
                 ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1 || !parameters[0].ParameterType.IsSubclassOf(typeof(AsyncEventArgs)))
+                if (parameters.Length != 1 || (parameters[0].ParameterType != typeof(AsyncEventArgs) && !parameters[0].ParameterType.IsSubclassOf(typeof(AsyncEventArgs))))
                 {
                     continue;
                 }
@@ -166,11 +168,11 @@ namespace OoLunar.AsyncEvents
                     Type genericMethodType = typeof(AsyncEventPreHandler<>).MakeGenericType(parameters[0].ParameterType);
                     if (method.IsStatic)
                     {
-                        AddPreHandler((AsyncEventPreHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
+                        _addPreHandlerGenericMethod.MakeGenericMethod(parameters[0].ParameterType).Invoke(this, [Delegate.CreateDelegate(genericMethodType, method), attribute.Priority]);
                     }
                     else if (target is not null)
                     {
-                        AddPreHandler((AsyncEventPreHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
+                        _addPreHandlerGenericMethod.MakeGenericMethod(parameters[0].ParameterType).Invoke(this, [Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority]);
                     }
                 }
                 else
@@ -178,11 +180,11 @@ namespace OoLunar.AsyncEvents
                     Type genericMethodType = typeof(AsyncEventPostHandler<>).MakeGenericType(parameters[0].ParameterType);
                     if (method.IsStatic)
                     {
-                        AddPostHandler((AsyncEventPostHandler)Delegate.CreateDelegate(genericMethodType, method), attribute.Priority, parameters[0].ParameterType);
+                        _addPostHandlerGenericMethod.MakeGenericMethod(parameters[0].ParameterType).Invoke(this, [Delegate.CreateDelegate(genericMethodType, method), attribute.Priority]);
                     }
                     else if (target is not null)
                     {
-                        AddPostHandler((AsyncEventPostHandler)Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority, parameters[0].ParameterType);
+                        _addPostHandlerGenericMethod.MakeGenericMethod(parameters[0].ParameterType).Invoke(this, [Delegate.CreateDelegate(genericMethodType, target, method), attribute.Priority]);
                     }
                 }
             }
@@ -208,29 +210,6 @@ namespace OoLunar.AsyncEvents
         /// <summary>
         /// Registers an asynchronous event handler for the specified event type.
         /// </summary>
-        /// <param name="preHandler">The asynchronous event handler to register.</param>
-        /// <param name="priority">The priority of the event handler.</param>
-        /// <param name="type">The type of the asynchronous event arguments.</param>
-        public void AddPreHandler(AsyncEventPreHandler preHandler, AsyncEventPriority priority, Type type)
-        {
-            // Check if the type implements AsyncEventArgs
-            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
-            {
-                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
-            }
-
-            if (!_preHandlers.TryGetValue(type, out Dictionary<object, AsyncEventPriority>? preHandlers))
-            {
-                preHandlers = [];
-                _preHandlers.Add(type, preHandlers);
-            }
-
-            preHandlers.Add(preHandler, priority);
-        }
-
-        /// <summary>
-        /// Registers an asynchronous event handler for the specified event type.
-        /// </summary>
         /// <param name="postHandler">The asynchronous event handler to register.</param>
         /// <param name="priority">The priority of the event handler.</param>
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
@@ -240,28 +219,6 @@ namespace OoLunar.AsyncEvents
             {
                 postHandlers = [];
                 _postHandlers.Add(typeof(T), postHandlers);
-            }
-
-            postHandlers.Add(postHandler, priority);
-        }
-
-        /// <summary>
-        /// Registers an asynchronous event handler for the specified event type.
-        /// </summary>
-        /// <param name="postHandler">The asynchronous event handler to register.</param>
-        /// <param name="priority">The priority of the event handler.</param>
-        /// <param name="type">The type of the asynchronous event arguments.</param>
-        public void AddPostHandler(AsyncEventPostHandler postHandler, AsyncEventPriority priority, Type type)
-        {
-            if (type != typeof(AsyncEventArgs) && type.IsAssignableFrom(typeof(AsyncEventArgs)))
-            {
-                throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
-            }
-
-            if (!_postHandlers.TryGetValue(type, out Dictionary<object, AsyncEventPriority>? postHandlers))
-            {
-                postHandlers = [];
-                _postHandlers.Add(type, postHandlers);
             }
 
             postHandlers.Add(postHandler, priority);

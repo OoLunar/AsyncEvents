@@ -107,5 +107,13 @@ namespace OoLunar.AsyncEvents.Tests
             Assert.IsTrue(asyncEvent.PreHandlers.ContainsKey(preHandler));
             Assert.IsTrue(asyncEvent.PostHandlers.ContainsKey(postHandler));
         }
+
+        [TestMethod]
+        public void AddHandlers_NullTarget()
+        {
+            _container.AddHandlers<ExampleAsyncEventHandler>();
+            Assert.IsTrue(_container.GetAsyncEvent<AsyncEventArgs>().PreHandlers.Count == 1);
+            Assert.IsTrue(_container.GetAsyncEvent<AsyncEventArgs>().PostHandlers.Count == 1);
+        }
     }
 }
