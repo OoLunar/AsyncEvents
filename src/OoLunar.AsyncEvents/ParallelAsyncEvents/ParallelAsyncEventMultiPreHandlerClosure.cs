@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OoLunar.AsyncEvents.AsyncEventClosures
+namespace OoLunar.AsyncEvents.ParallelAsyncEvents
 {
-    internal class AsyncEventParallelMultiPreHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
+    internal class ParallelAsyncEventMultiPreHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
         private readonly AsyncEventPreHandler<TAsyncEventArgs>[] _handlers;
 
-        public AsyncEventParallelMultiPreHandlerClosure(AsyncEventPreHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
+        public ParallelAsyncEventMultiPreHandlerClosure(AsyncEventPreHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
 
         public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs)
         {

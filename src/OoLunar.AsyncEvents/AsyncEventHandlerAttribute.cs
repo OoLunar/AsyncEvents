@@ -6,7 +6,7 @@ namespace OoLunar.AsyncEvents
     /// Marks a method/delegate as an async event handler, optionally specifying the priority.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Delegate, AllowMultiple = false)]
-    public sealed class AsyncEventHandlerAttribute : Attribute
+    public class AsyncEventHandlerAttribute : Attribute
     {
         /// <summary>
         /// Describes the importance of the event handler, which is used to determine the order in which handlers are invoked.

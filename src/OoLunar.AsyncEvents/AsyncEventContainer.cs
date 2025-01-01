@@ -19,33 +19,6 @@ namespace OoLunar.AsyncEvents
         private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _postHandlers = [];
         private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _preHandlers = [];
 
-        /// <inheritdoc cref="AsyncEvent{T}.ParallelizationEnabled"/>
-        public bool ParallelizationEnabled { get; init; }
-
-        /// <inheritdoc cref="AsyncEvent{T}.MinimumParallelHandlerCount"/>
-        public int MinimumParallelHandlerCount { get; init; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
-        /// </summary>
-        public AsyncEventContainer() : this(false, 0) { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
-        /// </summary>
-        /// <inheritdoc cref="AsyncEvent{T}.AsyncEvent(bool)"/>
-        public AsyncEventContainer(bool parallelize) : this(parallelize, Environment.ProcessorCount) { }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AsyncEventContainer"/> class, which contains asynchronous events and event handlers.
-        /// </summary>
-        /// <inheritdoc cref="AsyncEvent{T}.AsyncEvent(bool, int)"/>
-        public AsyncEventContainer(bool parallelize, int minimumParallelHandlers)
-        {
-            ParallelizationEnabled = parallelize;
-            MinimumParallelHandlerCount = minimumParallelHandlers;
-        }
-
         /// <summary>
         /// Finds or lazily creates an asynchronous event of the specified type.
         /// </summary>
@@ -58,7 +31,7 @@ namespace OoLunar.AsyncEvents
                 return (AsyncEvent<T>)value;
             }
 
-            AsyncEvent<T> asyncServerEvent = new(ParallelizationEnabled, MinimumParallelHandlerCount);
+            AsyncEvent<T> asyncServerEvent = new();
             if (_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
             {
                 foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
@@ -133,10 +106,10 @@ namespace OoLunar.AsyncEvents
             asyncServerEvent.Prepare();
         }
 
-        /// <inheritdoc cref="AsyncEvent{TEventArgs}.AddHandlers{T}(object?)"/>
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.AddHandlers{T}(object?)"/>
         public void AddHandlers<T>(object? target = null) => AddHandlers(typeof(T), target);
 
-        /// <inheritdoc cref="AsyncEvent{TEventArgs}.AddHandlers(Type, object?)"/>
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.AddHandlers(Type, object?)"/>
         public void AddHandlers(Type type, object? target = null)
         {
             ArgumentNullException.ThrowIfNull(type, nameof(type));

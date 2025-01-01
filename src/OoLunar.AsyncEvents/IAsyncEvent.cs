@@ -16,13 +16,37 @@ namespace OoLunar.AsyncEvents
     /// </remarks>
     public interface IAsyncEvent
     {
-        /// <inheritdoc cref="AsyncEvent{TEventArgs}.InvokePreHandlersAsync(TEventArgs)"/>
+        /// <summary>
+        /// Removes all pre-handlers from the event.
+        /// </summary>
+        public void ClearPreHandlers();
+
+        /// <summary>
+        /// Removes all post-handlers from the event.
+        /// </summary>
+        public void ClearPostHandlers();
+
+        /// <summary>
+        /// Efficiently prepares the event for invocation by compiling the pre/post-handlers into a single delegate.
+        /// </summary>
+        public void Prepare();
+
+        /// <summary>
+        /// Efficiently prepares the event for invocation by compiling the pre/post-handlers into a single delegate.
+        /// </summary>
+        public ValueTask PrepareAsync()
+        {
+            Prepare();
+            return default;
+        }
+
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePreHandlersAsync(TEventArgs)"/>
         public ValueTask<bool> InvokePreHandlersAsync(AsyncEventArgs eventArgs);
 
-        /// <inheritdoc cref="AsyncEvent{TEventArgs}.InvokePostHandlersAsync(TEventArgs)"/>
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePostHandlersAsync(TEventArgs)"/>
         public ValueTask InvokePostHandlersAsync(AsyncEventArgs eventArgs);
 
-        /// <inheritdoc cref="AsyncEvent{TEventArgs}.InvokeAsync(TEventArgs)"/>
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokeAsync(TEventArgs)"/>
         public async ValueTask<bool> InvokeAsync(AsyncEventArgs eventArgs)
         {
             if (!await InvokePreHandlersAsync(eventArgs))

@@ -18,4 +18,7 @@
   <ItemGroup>
     <None Include="$(ProjectRoot)/README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+  </ItemGroup>
 </Project>
