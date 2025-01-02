@@ -10,7 +10,6 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
-using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Running;
 
 namespace OoLunar.AsyncEvents.Benchmarks
@@ -28,7 +27,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
                 .AddColumn([StatisticColumn.Max, StatisticColumn.Min])
                 .AddDiagnoser([new MemoryDiagnoser(new())])
                 .AddExporter([MarkdownExporter.GitHub])
-                .WithOrderer(new DefaultOrderer(SummaryOrderPolicy.FastestToSlowest));
+                .WithOrderer(new AsyncEventOrderer());
 
 #if DEBUG
             config = config.WithOptions(ConfigOptions.DisableOptimizationsValidator).AddJob(Job.Dry).StopOnFirstError(false);
