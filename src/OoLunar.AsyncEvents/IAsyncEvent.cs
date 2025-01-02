@@ -27,6 +27,15 @@ namespace OoLunar.AsyncEvents
         public void ClearPostHandlers();
 
         /// <summary>
+        /// Removes all pre/post-handlers from the event.
+        /// </summary>
+        public void ClearHandlers()
+        {
+            ClearPreHandlers();
+            ClearPostHandlers();
+        }
+
+        /// <summary>
         /// Efficiently prepares the event for invocation by compiling the pre/post-handlers into a single delegate.
         /// </summary>
         public void Prepare();
