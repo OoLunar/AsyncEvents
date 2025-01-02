@@ -52,6 +52,10 @@ namespace OoLunar.AsyncEvents
                 handlers = [];
                 _preHandlers.Add(priority, handlers);
             }
+            else if (handlers.Contains(handler))
+            {
+                return;
+            }
 
             handlers.Add(handler);
         }
@@ -63,6 +67,10 @@ namespace OoLunar.AsyncEvents
             {
                 handlers = [];
                 _postHandlers.Add(priority, handlers);
+            }
+            else if (handlers.Contains(handler))
+            {
+                return;
             }
 
             handlers.Add(handler);
