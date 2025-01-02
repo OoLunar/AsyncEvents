@@ -40,7 +40,7 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Adding post-handler '{Handler}' with priority {Priority}.", handler, priority);
-            _asyncEvent.AddPostHandler(handler, priority);
+            _asyncEvent.AddPostHandler(new DebugPostHandlerWrapper<TEventArgs>(handler, _logger).StartPostHandlerAsync, priority);
             _logger.LogDebug("Added post-handler '{Handler}' with priority {Priority}.", handler, priority);
         }
 
@@ -48,7 +48,7 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public void AddPreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Adding pre-handler '{Handler}' with priority {Priority}.", handler, priority);
-            _asyncEvent.AddPreHandler(handler, priority);
+            _asyncEvent.AddPreHandler(new DebugPreHandlerWrapper<TEventArgs>(handler, _logger).StartPreHandlerAsync, priority);
             _logger.LogDebug("Added pre-handler '{Handler}' with priority {Priority}.", handler, priority);
         }
 
@@ -138,18 +138,62 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public bool RemovePostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Removing post-handler '{Handler}' with priority {Priority}.", handler, priority);
-            bool result = _asyncEvent.RemovePostHandler(handler, priority);
-            _logger.LogDebug("Removed post-handler '{Handler}' with priority {Priority}.", handler, priority);
-            return result;
+            if (!_asyncEvent.PostHandlers.TryGetValue(priority, out IReadOnlyList<AsyncEventPostHandler<TEventArgs>>? handlers))
+            {
+                _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+                return false;
+            }
+
+            foreach (AsyncEventPostHandler<TEventArgs> currentHandler in handlers)
+            {
+                if (currentHandler.Target is not DebugPostHandlerWrapper<TEventArgs> wrapper || wrapper.PostHandler != handler)
+                {
+                    continue;
+                }
+
+                _logger.LogDebug("Found post-handler '{Handler}' with priority {Priority}.", handler, priority);
+                if (!_asyncEvent.RemovePostHandler(wrapper.StartPostHandlerAsync, priority))
+                {
+                    break;
+                }
+
+                _logger.LogDebug("Removed post-handler '{Handler}' with priority {Priority}.", handler, priority);
+                return true;
+            }
+
+            _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+            return false;
         }
 
         /// <inheritdoc />
         public bool RemovePreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Removing pre-handler '{Handler}' with priority {Priority}.", handler, priority);
-            bool result = _asyncEvent.RemovePreHandler(handler, priority);
-            _logger.LogDebug("Removed pre-handler '{Handler}' with priority {Priority}.", handler, priority);
-            return result;
+            if (!_asyncEvent.PreHandlers.TryGetValue(priority, out IReadOnlyList<AsyncEventPreHandler<TEventArgs>>? handlers))
+            {
+                _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+                return false;
+            }
+
+            foreach (AsyncEventPreHandler<TEventArgs> currentHandler in handlers)
+            {
+                if (currentHandler.Target is not DebugPreHandlerWrapper<TEventArgs> wrapper || wrapper.PreHandler != handler)
+                {
+                    continue;
+                }
+
+                _logger.LogDebug("Found pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+                if (!_asyncEvent.RemovePreHandler(wrapper.StartPreHandlerAsync, priority))
+                {
+                    break;
+                }
+
+                _logger.LogDebug("Removed pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+                return true;
+            }
+
+            _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+            return false;
         }
     }
 }
