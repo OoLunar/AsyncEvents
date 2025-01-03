@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -40,6 +42,12 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Adding post-handler '{Handler}' with priority {Priority}.", handler, priority);
+            if (TryFindPostHandler(handler, priority, out _))
+            {
+                _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} already exists.", handler, priority);
+                return;
+            }
+
             _asyncEvent.AddPostHandler(new DebugPostHandlerWrapper<TEventArgs>(handler, _logger).StartPostHandlerAsync, priority);
             _logger.LogDebug("Added post-handler '{Handler}' with priority {Priority}.", handler, priority);
         }
@@ -48,6 +56,12 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public void AddPreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Adding pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+            if (TryFindPreHandler(handler, priority, out _))
+            {
+                _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} already exists.", handler, priority);
+                return;
+            }
+
             _asyncEvent.AddPreHandler(new DebugPreHandlerWrapper<TEventArgs>(handler, _logger).StartPreHandlerAsync, priority);
             _logger.LogDebug("Added pre-handler '{Handler}' with priority {Priority}.", handler, priority);
         }
@@ -138,61 +152,87 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public bool RemovePostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Removing post-handler '{Handler}' with priority {Priority}.", handler, priority);
-            if (!_asyncEvent.PostHandlers.TryGetValue(priority, out IReadOnlyList<AsyncEventPostHandler<TEventArgs>>? handlers))
+            if (!TryFindPostHandler(handler, priority, out DebugPostHandlerWrapper<TEventArgs>? wrapper))
             {
                 _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
                 return false;
             }
-
-            foreach (AsyncEventPostHandler<TEventArgs> currentHandler in handlers)
+            else if (!_asyncEvent.RemovePostHandler(wrapper.StartPostHandlerAsync, priority))
             {
-                if (currentHandler.Target is not DebugPostHandlerWrapper<TEventArgs> wrapper || wrapper.PostHandler != handler)
-                {
-                    continue;
-                }
-
-                _logger.LogDebug("Found post-handler '{Handler}' with priority {Priority}.", handler, priority);
-                if (!_asyncEvent.RemovePostHandler(wrapper.StartPostHandlerAsync, priority))
-                {
-                    break;
-                }
-
-                _logger.LogDebug("Removed post-handler '{Handler}' with priority {Priority}.", handler, priority);
-                return true;
+                throw new UnreachableException("Post-handler was found, but could not be removed.");
             }
 
-            _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
-            return false;
+            _logger.LogDebug("Removed post-handler '{Handler}' with priority {Priority}.", handler, priority);
+            return true;
         }
 
         /// <inheritdoc />
         public bool RemovePreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             _logger.LogDebug("Removing pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+            if (!TryFindPreHandler(handler, priority, out DebugPreHandlerWrapper<TEventArgs>? wrapper))
+            {
+                _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+                return false;
+            }
+            else if (!_asyncEvent.RemovePreHandler(wrapper.StartPreHandlerAsync, priority))
+            {
+                throw new UnreachableException("Pre-handler was found, but could not be removed.");
+            }
+
+            _logger.LogDebug("Removed pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+            return true;
+        }
+
+        private bool TryFindPreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority, [NotNullWhen(true)] out DebugPreHandlerWrapper<TEventArgs>? wrapper)
+        {
             if (!_asyncEvent.PreHandlers.TryGetValue(priority, out IReadOnlyList<AsyncEventPreHandler<TEventArgs>>? handlers))
             {
                 _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+                wrapper = null;
                 return false;
             }
 
             foreach (AsyncEventPreHandler<TEventArgs> currentHandler in handlers)
             {
-                if (currentHandler.Target is not DebugPreHandlerWrapper<TEventArgs> wrapper || wrapper.PreHandler != handler)
+                if (currentHandler.Target is not DebugPreHandlerWrapper<TEventArgs> currentWrapper || currentWrapper.PreHandler != handler)
                 {
                     continue;
                 }
 
                 _logger.LogDebug("Found pre-handler '{Handler}' with priority {Priority}.", handler, priority);
-                if (!_asyncEvent.RemovePreHandler(wrapper.StartPreHandlerAsync, priority))
-                {
-                    break;
-                }
-
-                _logger.LogDebug("Removed pre-handler '{Handler}' with priority {Priority}.", handler, priority);
+                wrapper = currentWrapper;
                 return true;
             }
 
             _logger.LogDebug("Pre-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+            wrapper = null;
+            return false;
+        }
+
+        private bool TryFindPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority, [NotNullWhen(true)] out DebugPostHandlerWrapper<TEventArgs>? wrapper)
+        {
+            if (!_asyncEvent.PostHandlers.TryGetValue(priority, out IReadOnlyList<AsyncEventPostHandler<TEventArgs>>? handlers))
+            {
+                _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+                wrapper = null;
+                return false;
+            }
+
+            foreach (AsyncEventPostHandler<TEventArgs> currentHandler in handlers)
+            {
+                if (currentHandler.Target is not DebugPostHandlerWrapper<TEventArgs> currentWrapper || currentWrapper.PostHandler != handler)
+                {
+                    continue;
+                }
+
+                _logger.LogDebug("Found post-handler '{Handler}' with priority {Priority}.", handler, priority);
+                wrapper = currentWrapper;
+                return true;
+            }
+
+            _logger.LogDebug("Post-handler '{Handler}' with priority {Priority} not found.", handler, priority);
+            wrapper = null;
             return false;
         }
     }
