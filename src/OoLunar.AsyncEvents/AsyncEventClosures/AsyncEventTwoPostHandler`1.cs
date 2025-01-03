@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents.AsyncEventClosures
 {
-    internal class AsyncEventTwoPostHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
+    internal class AsyncEventTwoPostHandler<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
         private readonly AsyncEventPostHandler<TAsyncEventArgs> _handler1;
         private readonly AsyncEventPostHandler<TAsyncEventArgs> _handler2;
 
-        public AsyncEventTwoPostHandlerClosure(AsyncEventPostHandler<TAsyncEventArgs> handler1, AsyncEventPostHandler<TAsyncEventArgs> handler2)
+        public AsyncEventTwoPostHandler(AsyncEventPostHandler<TAsyncEventArgs> handler1, AsyncEventPostHandler<TAsyncEventArgs> handler2)
         {
             _handler1 = handler1;
             _handler2 = handler2;

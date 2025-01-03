@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace OoLunar.AsyncEvents.ParallelAsyncEvents
+namespace OoLunar.AsyncEvents.AsyncEventClosures
 {
-    internal class ParallelAsyncEventMultiPostHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
+    internal class AsyncEventMultiPostHandler<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
         private readonly AsyncEventPostHandler<TAsyncEventArgs>[] _handlers;
 
-        public ParallelAsyncEventMultiPostHandlerClosure(AsyncEventPostHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
+        public AsyncEventMultiPostHandler(AsyncEventPostHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
 
         public async ValueTask InvokeAsync(TAsyncEventArgs eventArgs)
         {
             List<Exception>? errors = null;
-            await Parallel.ForAsync(0, _handlers.Length, async (int i, CancellationToken cancellationToken) =>
+            for (int i = 0; i < _handlers.Length; i++)
             {
                 try
                 {
@@ -25,7 +24,7 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
                     errors ??= [];
                     errors.Add(error);
                 }
-            });
+            }
 
             if (errors is null)
             {

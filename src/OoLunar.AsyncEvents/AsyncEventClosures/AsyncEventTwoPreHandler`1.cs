@@ -3,12 +3,12 @@ using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents.AsyncEventClosures
 {
-    internal class AsyncEventTwoPreHandlerClosure<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
+    internal class AsyncEventTwoPreHandler<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {
         private readonly AsyncEventPreHandler<TAsyncEventArgs> _handler1;
         private readonly AsyncEventPreHandler<TAsyncEventArgs> _handler2;
 
-        public AsyncEventTwoPreHandlerClosure(AsyncEventPreHandler<TAsyncEventArgs> handler1, AsyncEventPreHandler<TAsyncEventArgs> handler2)
+        public AsyncEventTwoPreHandler(AsyncEventPreHandler<TAsyncEventArgs> handler1, AsyncEventPreHandler<TAsyncEventArgs> handler2)
         {
             _handler1 = handler1;
             _handler2 = handler2;
