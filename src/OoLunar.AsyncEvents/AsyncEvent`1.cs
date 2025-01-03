@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using OoLunar.AsyncEvents.AsyncEventClosures;
 
@@ -7,6 +8,7 @@ namespace OoLunar.AsyncEvents
     /// <summary>
     /// An asynchronous event that can be subscribed to and invoked.
     /// </summary>
+    [DebuggerDisplay("{ToString(),nq}")]
     public class AsyncEvent<TEventArgs> : IAsyncEvent<TEventArgs> where TEventArgs : AsyncEventArgs
     {
         /// <inheritdoc cref="AsyncEvent{TEventArgs}.PreHandlers" />
@@ -248,6 +250,6 @@ namespace OoLunar.AsyncEvents
         }
 
         /// <inheritdoc/>
-        public override string ToString() => $"{GetType()}, PreHandlers: {_preHandlers.Count}, PostHandlers: {_postHandlers.Count}";
+        public override string ToString() => $"{GetType().Name}, PreHandlers: {_preHandlers.Count}, PostHandlers: {_postHandlers.Count}";
     }
 }
