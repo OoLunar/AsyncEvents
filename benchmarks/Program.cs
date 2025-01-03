@@ -25,6 +25,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
             IConfig config = ManualConfig
                 .CreateMinimumViable()
                 .AddColumn([StatisticColumn.Max, StatisticColumn.Min])
+                .HideColumns("asyncEvent")
                 .AddDiagnoser([new MemoryDiagnoser(new())])
                 .AddExporter([MarkdownExporter.GitHub])
                 .WithOrderer(new AsyncEventOrderer());

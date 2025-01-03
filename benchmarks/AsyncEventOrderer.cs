@@ -22,7 +22,8 @@ namespace OoLunar.AsyncEvents.Benchmarks
             // Order by the mean, then by the async name column, then by the handler count column
             // If any of the columns aren't there, use the default orderer
             _defaultOrderer.GetSummaryOrder(benchmarkCases, summary)
-                    .OrderBy(benchmarkCase => benchmarkCase.Parameters.Items.FirstOrDefault(item => item.Name == "asyncEventName")?.Value ?? string.Empty)
-                    .ThenBy(benchmarkCase => benchmarkCase.Parameters.Items.FirstOrDefault(item => item.Name == "handlerCount")?.Value ?? string.Empty);
+                .OrderBy(benchmarkCase => benchmarkCase.Descriptor.WorkloadMethod.Name)
+                .ThenBy(benchmarkCase => benchmarkCase.Parameters.Items.FirstOrDefault(item => item.Name == "asyncEventName")?.Value ?? string.Empty)
+                .ThenBy(benchmarkCase => benchmarkCase.Parameters.Items.FirstOrDefault(item => item.Name == "handlerCount")?.Value ?? string.Empty);
     }
 }
