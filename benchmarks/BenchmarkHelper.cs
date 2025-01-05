@@ -19,7 +19,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
             new DebugAsyncEvent<AsyncEventArgs>(new AsyncEvent<AsyncEventArgs>(), NullLogger<DebugAsyncEvent<AsyncEventArgs>>.Instance)
         ];
 
-        public static IEnumerable<object[]> CreateAsyncEvents(bool registerEventHandlers = true, bool prepareEventHandlers = false)
+        public static IEnumerable<object[]> CreateAsyncEvents(bool registerEventHandlers = true, bool prepareEventHandlers = false, int exceptionHandlerCount = 0)
         {
             foreach (IAsyncEvent<AsyncEventArgs> asyncEvent in _asyncEvents)
             {
@@ -29,7 +29,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
                 }
                 else
                 {
-                    foreach (object[] asyncEventWithSubscribers in AddAsyncEventHandlers(asyncEvent, prepareEventHandlers))
+                    foreach (object[] asyncEventWithSubscribers in AddAsyncEventHandlers(asyncEvent, prepareEventHandlers, exceptionHandlerCount))
                     {
                         yield return asyncEventWithSubscribers;
                     }
@@ -37,7 +37,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
             }
         }
 
-        private static IEnumerable<object[]> AddAsyncEventHandlers(IAsyncEvent<AsyncEventArgs> asyncEvent, bool prepareEventHandlers)
+        private static IEnumerable<object[]> AddAsyncEventHandlers(IAsyncEvent<AsyncEventArgs> asyncEvent, bool prepareEventHandlers, int exceptionHandlerCount)
         {
             // Generate a anonymous delegate through expressions, since adding
             // the same delegate multiple times will throw an exception
@@ -55,15 +55,34 @@ namespace OoLunar.AsyncEvents.Benchmarks
 
                     AsyncEventPostHandler<AsyncEventArgs> postHandler = postHandlerExpression.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>();
                     asyncEvent.AddPostHandler(postHandler);
+                }
 
-                    if (prepareEventHandlers)
+                if (exceptionHandlerCount > 0)
+                {
+                    for (int i = 0; i < exceptionHandlerCount && i < handlerCount; i++)
                     {
-                        asyncEvent.Prepare();
+                        ThrowHandlers throwHandlers = new();
+                        asyncEvent.RemovePreHandler(asyncEvent.PreHandlers[AsyncEventPriority.Normal][i]);
+                        asyncEvent.AddPreHandler(throwHandlers.ThrowPreHandler);
+
+                        asyncEvent.RemovePostHandler(asyncEvent.PostHandlers[AsyncEventPriority.Normal][i]);
+                        asyncEvent.AddPostHandler(throwHandlers.ThrowPostHandler);
                     }
+                }
+
+                if (prepareEventHandlers)
+                {
+                    asyncEvent.Prepare();
                 }
 
                 yield return [asyncEvent, asyncEvent.GetType().Name, (int)handlerCount];
             }
+        }
+
+        private class ThrowHandlers
+        {
+            public ValueTask<bool> ThrowPreHandler(AsyncEventArgs eventArgs) => throw new Exception();
+            public ValueTask ThrowPostHandler(AsyncEventArgs eventArgs) => throw new Exception();
         }
     }
 }
