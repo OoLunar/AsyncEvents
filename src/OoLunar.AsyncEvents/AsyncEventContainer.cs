@@ -171,13 +171,16 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            if (!_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
+            lock (_preHandlers)
             {
-                preHandlers = [];
-                _preHandlers.Add(typeof(T), preHandlers);
-            }
+                if (!_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
+                {
+                    preHandlers = [];
+                    _preHandlers.Add(typeof(T), preHandlers);
+                }
 
-            preHandlers.Add(preHandler, priority);
+                preHandlers.Add(preHandler, priority);
+            }
         }
 
         /// <summary>
@@ -188,13 +191,16 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            if (!_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
+            lock (_postHandlers)
             {
-                postHandlers = [];
-                _postHandlers.Add(typeof(T), postHandlers);
-            }
+                if (!_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
+                {
+                    postHandlers = [];
+                    _postHandlers.Add(typeof(T), postHandlers);
+                }
 
-            postHandlers.Add(postHandler, priority);
+                postHandlers.Add(postHandler, priority);
+            }
         }
 
         /// <summary>
@@ -214,13 +220,22 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            _preHandlers.Remove(type);
+            lock (_preHandlers)
+            {
+                _preHandlers.Remove(type);
+            }
         }
 
         /// <summary>
         /// Removes all pre-event handlers for all event types.
         /// </summary>
-        public void ClearPreHandlers() => _preHandlers.Clear();
+        public void ClearPreHandlers()
+        {
+            lock (_preHandlers)
+            {
+                _preHandlers.Clear();
+            }
+        }
 
         /// <summary>
         /// Removes all post-event handlers for the specified event type.
@@ -239,12 +254,21 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            _postHandlers.Remove(type);
+            lock (_postHandlers)
+            {
+                _postHandlers.Remove(type);
+            }
         }
 
         /// <summary>
         /// Removes all post-event handlers for all event types.
         /// </summary>
-        public void ClearPostHandlers() => _postHandlers.Clear();
+        public void ClearPostHandlers()
+        {
+            lock (_postHandlers)
+            {
+                _postHandlers.Clear();
+            }
+        }
     }
 }

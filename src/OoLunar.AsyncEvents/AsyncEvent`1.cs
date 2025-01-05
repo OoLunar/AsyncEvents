@@ -49,78 +49,102 @@ namespace OoLunar.AsyncEvents
         /// <inheritdoc />
         public void AddPreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
+            lock (_preHandlers)
             {
-                handlers = [];
-                _preHandlers.Add(priority, handlers);
-            }
-            else if (handlers.Contains(handler))
-            {
-                return;
-            }
+                if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
+                {
+                    handlers = [];
+                    _preHandlers.Add(priority, handlers);
+                }
+                else if (handlers.Contains(handler))
+                {
+                    return;
+                }
 
-            handlers.Add(handler);
+                handlers.Add(handler);
+            }
         }
 
         /// <inheritdoc />
         public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
+            lock (_postHandlers)
             {
-                handlers = [];
-                _postHandlers.Add(priority, handlers);
-            }
-            else if (handlers.Contains(handler))
-            {
-                return;
-            }
+                if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
+                {
+                    handlers = [];
+                    _postHandlers.Add(priority, handlers);
+                }
+                else if (handlers.Contains(handler))
+                {
+                    return;
+                }
 
-            handlers.Add(handler);
+                handlers.Add(handler);
+            }
         }
 
         /// <inheritdoc />
         public bool RemovePreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
+            lock (_preHandlers)
             {
-                return false;
-            }
-            else if (!handlers.Remove(handler))
-            {
-                return false;
-            }
-            else if (handlers.Count == 0)
-            {
-                _preHandlers.Remove(priority);
-            }
+                if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
+                {
+                    return false;
+                }
+                else if (!handlers.Remove(handler))
+                {
+                    return false;
+                }
+                else if (handlers.Count == 0)
+                {
+                    _preHandlers.Remove(priority);
+                }
 
-            return true;
+                return true;
+            }
         }
 
         /// <inheritdoc />
         public bool RemovePostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
+            lock (_postHandlers)
             {
-                return false;
-            }
-            else if (!handlers.Remove(handler))
-            {
-                return false;
-            }
-            else if (handlers.Count == 0)
-            {
-                _postHandlers.Remove(priority);
-            }
+                if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
+                {
+                    return false;
+                }
+                else if (!handlers.Remove(handler))
+                {
+                    return false;
+                }
+                else if (handlers.Count == 0)
+                {
+                    _postHandlers.Remove(priority);
+                }
 
-            return true;
+                return true;
+            }
         }
 
         /// <inheritdoc />
-        public void ClearPreHandlers() => _preHandlers.Clear();
+        public void ClearPreHandlers()
+        {
+            lock (_preHandlers)
+            {
+                _preHandlers.Clear();
+            }
+        }
 
         /// <inheritdoc />
-        public void ClearPostHandlers() => _postHandlers.Clear();
+        public void ClearPostHandlers()
+        {
+            lock (_postHandlers)
+            {
+                _postHandlers.Clear();
+            }
+        }
 
         /// <inheritdoc />
         public async ValueTask<bool> InvokeAsync(TEventArgs eventArgs)
