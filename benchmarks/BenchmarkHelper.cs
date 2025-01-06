@@ -12,7 +12,9 @@ namespace OoLunar.AsyncEvents.Benchmarks
     public static class BenchmarkHelper
     {
         private const int HandlerCountsPow2 = 10;
-        private static IEnumerable<IAsyncEvent<AsyncEventArgs>> _asyncEvents =>
+
+        public static IEnumerable<int> HandlerCounts => Enumerable.Range(0, HandlerCountsPow2).Select(x => (int)Math.Pow(2, x));
+        public static IEnumerable<IAsyncEvent<AsyncEventArgs>> AsyncEvents =>
         [
             new AsyncEvent<AsyncEventArgs>(),
             new ParallelAsyncEvent<AsyncEventArgs>(),
@@ -21,7 +23,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
 
         public static IEnumerable<object[]> CreateAsyncEvents(bool registerEventHandlers = true, bool prepareEventHandlers = false, int exceptionHandlerCount = 0)
         {
-            foreach (IAsyncEvent<AsyncEventArgs> asyncEvent in _asyncEvents)
+            foreach (IAsyncEvent<AsyncEventArgs> asyncEvent in AsyncEvents)
             {
                 if (!registerEventHandlers)
                 {
@@ -34,6 +36,30 @@ namespace OoLunar.AsyncEvents.Benchmarks
                         yield return asyncEventWithSubscribers;
                     }
                 }
+            }
+        }
+
+        public static IEnumerable<AsyncEventPostHandler<AsyncEventArgs>> CreatePostHandlers(int handlerCount)
+        {
+            // Generate a anonymous delegate through expressions, since adding
+            // the same delegate multiple times will throw an exception
+            Expression<Func<AsyncEventArgs, ValueTask>> postHandlerExpression = eventArgs => ValueTask.CompletedTask;
+
+            for (int i = 0; i < handlerCount; i++)
+            {
+                yield return postHandlerExpression.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>();
+            }
+        }
+
+        public static IEnumerable<AsyncEventPreHandler<AsyncEventArgs>> CreatePreHandlers(int handlerCount)
+        {
+            // Generate a anonymous delegate through expressions, since adding
+            // the same delegate multiple times will throw an exception
+            Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandlerExpression = eventArgs => ValueTask.FromResult(true);
+
+            for (int i = 0; i < handlerCount; i++)
+            {
+                yield return preHandlerExpression.Compile().Method.CreateDelegate<AsyncEventPreHandler<AsyncEventArgs>>();
             }
         }
 
@@ -81,8 +107,10 @@ namespace OoLunar.AsyncEvents.Benchmarks
 
         private class ThrowHandlers
         {
-            public ValueTask<bool> ThrowPreHandler(AsyncEventArgs eventArgs) => throw new Exception();
-            public ValueTask ThrowPostHandler(AsyncEventArgs eventArgs) => throw new Exception();
+            private static readonly Exception _exception = new();
+
+            public ValueTask<bool> ThrowPreHandler(AsyncEventArgs eventArgs) => throw _exception;
+            public ValueTask ThrowPostHandler(AsyncEventArgs eventArgs) => throw _exception;
         }
     }
 }

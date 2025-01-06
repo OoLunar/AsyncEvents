@@ -11,6 +11,7 @@ using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Toolchains.InProcess.Emit;
 
 namespace OoLunar.AsyncEvents.Benchmarks
 {
@@ -31,7 +32,10 @@ namespace OoLunar.AsyncEvents.Benchmarks
                 .WithOrderer(new AsyncEventOrderer());
 
 #if DEBUG
-            config = config.WithOptions(ConfigOptions.DisableOptimizationsValidator).AddJob(Job.Dry).StopOnFirstError(false);
+            config = config
+                .AddJob(Job.Dry.WithToolchain(new InProcessEmitToolchain(TimeSpan.FromHours(1.0), logOutput: true)))
+                .WithOptions(ConfigOptions.DisableOptimizationsValidator)
+                .StopOnFirstError(false);
 #endif
 
             BenchmarkRunner.Run(types, config, args: args);

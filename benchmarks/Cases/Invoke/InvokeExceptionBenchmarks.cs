@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 
@@ -9,25 +7,27 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases.Invoke
 {
     public class InvokeExceptionsBenchmarks
     {
-        private event AsyncEventPostHandler<AsyncEventArgs> _postHandler = default!;
-        private readonly AsyncEventArgs _args = new();
+        private static readonly Exception _exception = new();
+        private static readonly AsyncEventArgs _args = new();
+
+        private event AsyncEventPostHandler<AsyncEventArgs> _asyncEvent = default!;
 
         [Benchmark, ArgumentsSource("CreateExceptionAsyncEvents")]
         public async ValueTask InvokeWithExceptionAsync(IAsyncEvent<AsyncEventArgs> asyncEvent, string asyncEventName, int handlerCount)
         {
             try
             {
-                await asyncEvent.InvokeAsync(_args);
+                await asyncEvent.InvokePostHandlersAsync(_args);
             }
             catch { }
         }
 
         [Benchmark, ArgumentsSource("SubscribeExceptionAsyncEvents")]
-        public async ValueTask InvokeWithExceptionAsync(string asyncEventName, int handlerCount)
+        public async ValueTask InvokeWithExceptionAsync(AsyncEventPostHandler<AsyncEventArgs> asyncEvent, string asyncEventName, int handlerCount)
         {
             try
             {
-                await _postHandler(_args);
+                await asyncEvent(_args);
             }
             catch { }
         }
@@ -37,17 +37,17 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases.Invoke
         {
             try
             {
-                await asyncEvent.InvokeAsync(_args);
+                await asyncEvent.InvokePostHandlersAsync(_args);
             }
             catch { }
         }
 
         [Benchmark, ArgumentsSource("SubscribeFourExceptionAsyncEvents")]
-        public async ValueTask InvokeWithFourExceptionsAsync(string asyncEventName, int handlerCount)
+        public async ValueTask InvokeWithFourExceptionsAsync(AsyncEventPostHandler<AsyncEventArgs> asyncEvent, string asyncEventName, int handlerCount)
         {
             try
             {
-                await _postHandler(_args);
+                await asyncEvent(_args);
             }
             catch { }
         }
@@ -58,48 +58,45 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases.Invoke
 
         public IEnumerable<object[]> SubscribeExceptionAsyncEvents()
         {
-            // Generate a anonymous delegate through expressions, since adding
-            // the same delegate multiple times will throw an exception
-            Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandlerExpression = eventArgs => ValueTask.FromResult(true);
-            Expression<Func<AsyncEventArgs, ValueTask>> postHandlerExpression = eventArgs => ValueTask.CompletedTask;
-
-            IEnumerable<double> handlerCounts = Enumerable.Range(0, 10).Select(x => Math.Pow(2, x));
-            foreach (double handlerCount in handlerCounts)
+            foreach (int handlerCount in BenchmarkHelper.HandlerCounts)
             {
-                for (int i = 0; i < handlerCount; i++)
+                // Clear the previous event handlers
+                _asyncEvent = default!;
+
+                // Add the new event handlers
+                foreach (AsyncEventPostHandler<AsyncEventArgs> postHandler in BenchmarkHelper.CreatePostHandlers(handlerCount - 1))
                 {
-                    AsyncEventPostHandler<AsyncEventArgs> postHandler = postHandlerExpression.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>();
-                    _postHandler += postHandler;
+                    _asyncEvent += postHandler;
                 }
 
-                _postHandler += args => throw new Exception();
+                _asyncEvent += args => throw _exception;
 
-                yield return [".NET Event", _postHandler.GetInvocationList().Length];
+                AsyncEventPostHandler<AsyncEventArgs> asyncEvent = _asyncEvent;
+                yield return [asyncEvent, ".NET Event", _asyncEvent.GetInvocationList().Length];
             }
         }
 
         public IEnumerable<object[]> SubscribeFourExceptionAsyncEvents()
         {
-            // Generate a anonymous delegate through expressions, since adding
-            // the same delegate multiple times will throw an exception
-            Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandlerExpression = eventArgs => ValueTask.FromResult(true);
-            Expression<Func<AsyncEventArgs, ValueTask>> postHandlerExpression = eventArgs => ValueTask.CompletedTask;
-
-            IEnumerable<double> handlerCounts = Enumerable.Range(0, 10).Select(x => Math.Pow(2, x));
-            foreach (double handlerCount in handlerCounts)
+            foreach (int handlerCount in BenchmarkHelper.HandlerCounts)
             {
-                for (int i = 0; i < handlerCount - 4; i++)
+                // Clear the previous event handlers
+                _asyncEvent = default!;
+
+                // Add the new event handlers
+                foreach (AsyncEventPostHandler<AsyncEventArgs> postHandler in BenchmarkHelper.CreatePostHandlers(handlerCount - 4))
                 {
-                    AsyncEventPostHandler<AsyncEventArgs> postHandler = postHandlerExpression.Compile().Method.CreateDelegate<AsyncEventPostHandler<AsyncEventArgs>>();
-                    _postHandler += postHandler;
+                    _asyncEvent += postHandler;
                 }
 
-                _postHandler += args => throw new Exception();
-                _postHandler += args => throw new Exception();
-                _postHandler += args => throw new Exception();
-                _postHandler += args => throw new Exception();
+                // Fill the remaining event handlers with exceptions
+                for (int i = 0; i < Math.Min(4, handlerCount); i++)
+                {
+                    _asyncEvent += args => throw _exception;
+                }
 
-                yield return [".NET Event", _postHandler.GetInvocationList().Length];
+                AsyncEventPostHandler<AsyncEventArgs> asyncEvent = _asyncEvent;
+                yield return [asyncEvent, ".NET Event", _asyncEvent.GetInvocationList().Length];
             }
         }
     }
