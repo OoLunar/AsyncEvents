@@ -38,7 +38,11 @@ jobs:
           dotnet-version: 9
       - name: Package Project
         run: |
-          ${{ github.event.release.body }} > CHANGELOG.md
+          EOF=$(dd if=/dev/urandom bs=16 count=1 status=none | base64)
+          cat <<$EOF > CHANGELOG.md
+          ${{ github.event.release.tag_name }}
+          $EOF
+
           dotnet pack -c Release -o build -p:Version="${{ github.event.release.tag_name }}"
           dotnet nuget push "build/*" --skip-duplicate -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
       - name: Upload Artifact
