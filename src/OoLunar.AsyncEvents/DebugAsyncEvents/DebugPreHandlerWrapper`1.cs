@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -18,9 +19,17 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         public async ValueTask<bool> StartPreHandlerAsync(TEventArgs eventArgs)
         {
             _logger.LogDebug("Started invoking pre-handler '{Handler}'", PreHandler);
-            bool result = await PreHandler(eventArgs);
-            _logger.LogDebug("Finished invoking pre-handler '{Handler}'", PreHandler);
-            return result;
+            try
+            {
+                bool result = await PreHandler(eventArgs);
+                _logger.LogDebug("Finished invoking pre-handler '{Handler}'", PreHandler);
+                return result;
+            }
+            catch (Exception error)
+            {
+                _logger.LogError(error, "An exception occurred while invoking pre-handler '{Handler}'", PreHandler);
+                throw;
+            }
         }
     }
 }

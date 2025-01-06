@@ -17,13 +17,13 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
 
         public ValueTask<bool> StartPreHandlerAsync(TEventArgs eventArgs)
         {
-            _logger.LogDebug("Started invoking {Priority} priority pre-handlers.", Priority);
+            _logger.LogDebug("Invoking {Priority} priority pre-handlers.", Priority);
             return ValueTask.FromResult(true);
         }
 
         public ValueTask StartPostHandlerAsync(TEventArgs eventArgs)
         {
-            _logger.LogDebug("Started invoking {Priority} priority post-handlers.", Priority);
+            _logger.LogDebug("Invoking {Priority} priority post-handlers.", Priority);
             return ValueTask.CompletedTask;
         }
     }
