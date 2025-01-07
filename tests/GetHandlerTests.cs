@@ -75,7 +75,7 @@ namespace OoLunar.AsyncEvents.Tests
             List<Type> types = [];
             for (int i = 0; i < totalCount; i++)
             {
-                // Define a type that inherits from BaseClass
+                // Define a type that inherits from AsyncEventArgs
                 TypeBuilder typeBuilder = moduleBuilder.DefineType($"DynamicType_{i}", TypeAttributes.Public, typeof(AsyncEventArgs));
 
                 // Create the type
