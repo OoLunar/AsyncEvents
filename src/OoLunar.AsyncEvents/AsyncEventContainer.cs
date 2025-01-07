@@ -26,33 +26,36 @@ namespace OoLunar.AsyncEvents
         /// <returns>A prepared asynchronous event of the specified type with the appropriate handlers.</returns>
         public AsyncEvent<T> GetAsyncEvent<T>() where T : AsyncEventArgs
         {
-            if (_serverEvents.TryGetValue(typeof(T), out IAsyncEvent? value))
+            lock (_serverEvents)
             {
-                return (AsyncEvent<T>)value;
-            }
-
-            AsyncEvent<T> asyncServerEvent = new();
-            if (_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
-            {
-                foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
+                if (_serverEvents.TryGetValue(typeof(T), out IAsyncEvent? value))
                 {
-                    // Cannot use 'preHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
-                    asyncServerEvent.AddPreHandler((AsyncEventPreHandler<T>)preHandler, priority);
+                    return (AsyncEvent<T>)value;
                 }
-            }
 
-            if (_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
-            {
-                foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
+                AsyncEvent<T> asyncServerEvent = new();
+                if (_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
                 {
-                    // Cannot use 'postHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
-                    asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
+                    foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
+                    {
+                        // Cannot use 'preHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
+                        asyncServerEvent.AddPreHandler((AsyncEventPreHandler<T>)preHandler, priority);
+                    }
                 }
-            }
 
-            asyncServerEvent.Prepare();
-            _serverEvents.Add(typeof(T), asyncServerEvent);
-            return asyncServerEvent;
+                if (_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
+                {
+                    foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
+                    {
+                        // Cannot use 'postHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
+                        asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
+                    }
+                }
+
+                asyncServerEvent.Prepare();
+                _serverEvents.Add(typeof(T), asyncServerEvent);
+                return asyncServerEvent;
+            }
         }
 
         /// <summary>
@@ -73,9 +76,13 @@ namespace OoLunar.AsyncEvents
             {
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
-            else if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
+
+            lock (_serverEvents)
             {
-                return value;
+                if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
+                {
+                    return value;
+                }
             }
 
             // Call GetAsyncEvent<T> through reflection
