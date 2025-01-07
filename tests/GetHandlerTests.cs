@@ -1,10 +1,10 @@
-using System.Reflection.Emit;
-using System.Reflection;
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Data;
-using System.Collections.Generic;
 
 namespace OoLunar.AsyncEvents.Tests
 {
@@ -44,55 +44,45 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod]
         public async ValueTask GetHandler_NonGeneric_Multithreaded_DynamicTypesAsync()
         {
-            // List to hold dynamically created types
-            List<Type> types = [];
-
             // Create 5000 dynamic types with a unique property for each
-            for (int i = 0; i < 5000; i++)
-            {
-                types.Add(CreateDynamicType(i));
-            }
+            List<Type> types = CreateDynamicTypes(5000);
 
-            IAsyncEvent asyncEvent;
+            // Create a list to store all async events
+            List<IAsyncEvent> asyncEvents = [];
             await Parallel.ForAsync(0, types.Count, (i, _) =>
             {
-                AsyncEventArgs instance = Activator.CreateInstance(types[i]) as AsyncEventArgs
-                    ?? throw new TypeAccessException();
-                asyncEvent = _container.GetAsyncEvent(instance.GetType());
+                asyncEvents.Add(_container.GetAsyncEvent(types[i]));
                 return ValueTask.CompletedTask;
             });
 
+            // Assert that all async events are unique
+            for (int i = 0; i < asyncEvents.Count; i++)
+            {
+                for (int j = i + 1; j < asyncEvents.Count; j++)
+                {
+                    Assert.AreNotEqual(asyncEvents[i], asyncEvents[j]);
+                }
+            }
         }
 
         // Create a dynamic type with a property
-        private Type CreateDynamicType(int index)
+        private static List<Type> CreateDynamicTypes(int totalCount)
         {
-            // Create a dynamic assembly and module
-            AssemblyName assemblyName = new AssemblyName("DynamicTypesAssembly");
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            // Create a dynamic assembly and reuse it for all dynamic types
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("DynamicTypesAssembly"), AssemblyBuilderAccess.Run);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
 
-            // Define a type that inherits from BaseClass
-            TypeBuilder typeBuilder = moduleBuilder.DefineType(
-                $"DynamicType{index}",
-                TypeAttributes.Public,
-                typeof(AsyncEventArgs));
+            List<Type> types = [];
+            for (int i = 0; i < totalCount; i++)
+            {
+                // Define a type that inherits from BaseClass
+                TypeBuilder typeBuilder = moduleBuilder.DefineType($"DynamicType_{i}", TypeAttributes.Public, typeof(AsyncEventArgs));
 
-            // Define a method "CustomMethod" in the dynamic type
-            MethodBuilder customMethodBuilder = typeBuilder.DefineMethod(
-                "CustomMethod",
-                MethodAttributes.Public | MethodAttributes.Virtual,
-                typeof(void),
-                Type.EmptyTypes);
+                // Create the type
+                types.Add(typeBuilder.CreateType());
+            }
 
-            ILGenerator ilGenerator = customMethodBuilder.GetILGenerator();
-            ilGenerator.EmitWriteLine($"Dynamic Type {index} custom method executed.");
-            ilGenerator.Emit(OpCodes.Ret);
-
-            // Create the type
-            Type dynamicType = typeBuilder.CreateType();
-
-            return dynamicType;
+            return types;
         }
     }
 }
