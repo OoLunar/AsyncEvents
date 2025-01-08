@@ -9,7 +9,12 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
     {
         private readonly AsyncEventPreHandler<TAsyncEventArgs>[] _handlers;
 
-        public ParallelAsyncEventMultiPreHandler(AsyncEventPreHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
+        public ParallelAsyncEventMultiPreHandler(AsyncEventPreHandler<TAsyncEventArgs>[] handlers)
+        {
+            ArgumentNullException.ThrowIfNull(handlers, nameof(handlers));
+            ArgumentOutOfRangeException.ThrowIfZero(handlers.Length, nameof(handlers));
+            _handlers = handlers;
+        }
 
         public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs)
         {

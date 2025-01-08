@@ -45,6 +45,7 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
             {
                 compiledHandlers.Add(handlers.Count switch
                 {
+                    0 => EmptyPreHandler,
                     1 => handlers[0],
                     _ when handlers.Count >= MinimumParallelHandlerCount => new ParallelAsyncEventMultiPreHandler<TEventArgs>([.. handlers]).InvokeAsync,
                     2 => new AsyncEventTwoPreHandler<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
@@ -54,6 +55,7 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
 
             return compiledHandlers.Count switch
             {
+                0 => EmptyPreHandler,
                 1 => compiledHandlers[0],
                 2 => new AsyncEventTwoPreHandler<TEventArgs>(compiledHandlers[0], compiledHandlers[1]).InvokeAsync,
                 _ => new AsyncEventMultiPreHandler<TEventArgs>([.. compiledHandlers]).InvokeAsync,
@@ -73,6 +75,7 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
             {
                 compiledHandlers.Add(handlers.Count switch
                 {
+                    0 => EmptyPostHandler,
                     1 => handlers[0],
                     _ when handlers.Count > MinimumParallelHandlerCount => new ParallelAsyncEventMultiPostHandler<TEventArgs>([.. handlers]).InvokeAsync,
                     2 => new AsyncEventTwoPostHandler<TEventArgs>(handlers[0], handlers[1]).InvokeAsync,
@@ -82,6 +85,7 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
 
             return compiledHandlers.Count switch
             {
+                0 => EmptyPostHandler,
                 1 => compiledHandlers[0],
                 2 => new AsyncEventTwoPostHandler<TEventArgs>(compiledHandlers[0], compiledHandlers[1]).InvokeAsync,
                 _ => new AsyncEventMultiPostHandler<TEventArgs>([.. compiledHandlers]).InvokeAsync,

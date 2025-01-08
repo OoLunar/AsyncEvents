@@ -108,7 +108,7 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
             {
                 foreach (AsyncEventPreHandler<TEventArgs> handler in preHandlers.Value)
                 {
-                    _logger.LogDebug("Priority {priority} found pre-handler '{Handler}'", preHandlers.Key, handler);
+                    _logger.LogDebug("Priority {Priority} found pre-handler '{Handler}'", preHandlers.Key, handler);
                 }
 
                 DebugClosure<TEventArgs> closure = new(preHandlers.Key, _logger);
@@ -120,7 +120,7 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
             {
                 foreach (AsyncEventPostHandler<TEventArgs> handler in postHandlers.Value)
                 {
-                    _logger.LogDebug("Priority {priority} found post-handler '{Handler}'", postHandlers.Key, handler);
+                    _logger.LogDebug("Priority {Priority} found post-handler '{Handler}'", postHandlers.Key, handler);
                 }
 
                 DebugClosure<TEventArgs> closure = new(postHandlers.Key, _logger);

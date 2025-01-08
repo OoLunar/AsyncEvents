@@ -189,6 +189,7 @@ namespace OoLunar.AsyncEvents
 
             return compiledHandlers.Count switch
             {
+                0 => EmptyPreHandler,
                 1 => compiledHandlers[0],
                 2 => new AsyncEventTwoPreHandler<TEventArgs>(compiledHandlers[0], compiledHandlers[1]).InvokeAsync,
                 _ => new AsyncEventMultiPreHandler<TEventArgs>([.. compiledHandlers]).InvokeAsync,
@@ -213,6 +214,7 @@ namespace OoLunar.AsyncEvents
 
             return compiledHandlers.Count switch
             {
+                0 => EmptyPostHandler,
                 1 => compiledHandlers[0],
                 2 => new AsyncEventTwoPostHandler<TEventArgs>(compiledHandlers[0], compiledHandlers[1]).InvokeAsync,
                 _ => new AsyncEventMultiPostHandler<TEventArgs>([.. compiledHandlers]).InvokeAsync,

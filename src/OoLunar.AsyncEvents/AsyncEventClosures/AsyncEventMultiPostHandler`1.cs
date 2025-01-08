@@ -8,7 +8,12 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
     {
         private readonly AsyncEventPostHandler<TAsyncEventArgs>[] _handlers;
 
-        public AsyncEventMultiPostHandler(AsyncEventPostHandler<TAsyncEventArgs>[] handlers) => _handlers = handlers;
+        public AsyncEventMultiPostHandler(AsyncEventPostHandler<TAsyncEventArgs>[] handlers)
+        {
+            ArgumentNullException.ThrowIfNull(handlers, nameof(handlers));
+            ArgumentOutOfRangeException.ThrowIfZero(handlers.Length, nameof(handlers));
+            _handlers = handlers;
+        }
 
         public async ValueTask InvokeAsync(TAsyncEventArgs eventArgs)
         {
