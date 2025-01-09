@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,12 +33,18 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
                 }
             });
 
-            if (errors is null)
+            if (errors?.Count is null or 0)
             {
                 return;
             }
-
-            throw errors.Count is 1 ? errors[0] : new AggregateException(errors);
+            else if (errors.Count is 1)
+            {
+                ExceptionDispatchInfo.Throw(errors[0]);
+            }
+            else
+            {
+                throw new AggregateException(errors);
+            }
         }
     }
 }

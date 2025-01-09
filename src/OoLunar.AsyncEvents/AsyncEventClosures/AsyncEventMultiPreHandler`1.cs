@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents.AsyncEventClosures
@@ -32,12 +33,19 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
                 }
             }
 
-            return errors?.Count switch
+            if (errors?.Count is null or 0)
             {
-                null => result,
-                1 => throw errors[0],
-                _ => throw new AggregateException(errors)
-            };
+                return result;
+            }
+            else if (errors.Count is 1)
+            {
+                ExceptionDispatchInfo.Throw(errors[0]);
+                return false; // This should never be reached
+            }
+            else
+            {
+                throw new AggregateException(errors);
+            }
         }
     }
 }

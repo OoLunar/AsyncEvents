@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents.AsyncEventClosures
@@ -40,7 +41,7 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
 
             if (error is not null)
             {
-                throw error;
+                ExceptionDispatchInfo.Throw(error);
             }
         }
     }
