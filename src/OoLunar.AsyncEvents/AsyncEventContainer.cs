@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -15,9 +16,9 @@ namespace OoLunar.AsyncEvents
         private static readonly MethodInfo _addPreHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPreHandler), BindingFlags.Public | BindingFlags.Instance)!;
         private static readonly MethodInfo _addPostHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPostHandler), BindingFlags.Public | BindingFlags.Instance)!;
 
-        private readonly Dictionary<Type, IAsyncEvent> _serverEvents = [];
-        private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _postHandlers = [];
-        private readonly Dictionary<Type, Dictionary<object, AsyncEventPriority>> _preHandlers = [];
+        private readonly ConcurrentDictionary<Type, IAsyncEvent> _serverEvents = [];
+        private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, AsyncEventPriority>> _postHandlers = [];
+        private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, AsyncEventPriority>> _preHandlers = [];
 
         /// <summary>
         /// Finds or lazily creates an asynchronous event of the specified type.
@@ -26,36 +27,33 @@ namespace OoLunar.AsyncEvents
         /// <returns>A prepared asynchronous event of the specified type with the appropriate handlers.</returns>
         public AsyncEvent<T> GetAsyncEvent<T>() where T : AsyncEventArgs
         {
-            lock (_serverEvents)
+            if (_serverEvents.TryGetValue(typeof(T), out IAsyncEvent? value))
             {
-                if (_serverEvents.TryGetValue(typeof(T), out IAsyncEvent? value))
-                {
-                    return (AsyncEvent<T>)value;
-                }
-
-                AsyncEvent<T> asyncServerEvent = new();
-                if (_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
-                {
-                    foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
-                    {
-                        // Cannot use 'preHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
-                        asyncServerEvent.AddPreHandler((AsyncEventPreHandler<T>)preHandler, priority);
-                    }
-                }
-
-                if (_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
-                {
-                    foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
-                    {
-                        // Cannot use 'postHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
-                        asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
-                    }
-                }
-
-                asyncServerEvent.Prepare();
-                _serverEvents.Add(typeof(T), asyncServerEvent);
-                return asyncServerEvent;
+                return (AsyncEvent<T>)value;
             }
+
+            AsyncEvent<T> asyncServerEvent = new();
+            if (_preHandlers.TryGetValue(typeof(T), out ConcurrentDictionary<object, AsyncEventPriority>? preHandlers))
+            {
+                foreach ((object preHandler, AsyncEventPriority priority) in preHandlers)
+                {
+                    // Cannot use 'preHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
+                    asyncServerEvent.AddPreHandler((AsyncEventPreHandler<T>)preHandler, priority);
+                }
+            }
+
+            if (_postHandlers.TryGetValue(typeof(T), out ConcurrentDictionary<object, AsyncEventPriority>? postHandlers))
+            {
+                foreach ((object postHandler, AsyncEventPriority priority) in postHandlers)
+                {
+                    // Cannot use 'postHandler' as a ref or out value because it is a 'foreach iteration variable' csharp(CS1657)
+                    asyncServerEvent.AddPostHandler((AsyncEventPostHandler<T>)postHandler, priority);
+                }
+            }
+
+            asyncServerEvent.Prepare();
+            _serverEvents.TryAdd(typeof(T), asyncServerEvent);
+            return asyncServerEvent;
         }
 
         /// <summary>
@@ -76,13 +74,9 @@ namespace OoLunar.AsyncEvents
             {
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
-
-            lock (_serverEvents)
+            else if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
             {
-                if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
-                {
-                    return value;
-                }
+                return value;
             }
 
             // Call GetAsyncEvent<T> through reflection
@@ -178,16 +172,8 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            lock (_preHandlers)
-            {
-                if (!_preHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? preHandlers))
-                {
-                    preHandlers = [];
-                    _preHandlers.Add(typeof(T), preHandlers);
-                }
-
-                preHandlers.Add(preHandler, priority);
-            }
+            ConcurrentDictionary<object, AsyncEventPriority> preHandlers = _preHandlers.GetOrAdd(typeof(T), []);
+            preHandlers.AddOrUpdate(preHandler, priority, (_, _) => priority);
         }
 
         /// <summary>
@@ -198,16 +184,8 @@ namespace OoLunar.AsyncEvents
         /// <typeparam name="T">The type of the asynchronous event arguments.</typeparam>
         public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
         {
-            lock (_postHandlers)
-            {
-                if (!_postHandlers.TryGetValue(typeof(T), out Dictionary<object, AsyncEventPriority>? postHandlers))
-                {
-                    postHandlers = [];
-                    _postHandlers.Add(typeof(T), postHandlers);
-                }
-
-                postHandlers.Add(postHandler, priority);
-            }
+            ConcurrentDictionary<object, AsyncEventPriority> postHandlers = _postHandlers.GetOrAdd(typeof(T), []);
+            postHandlers.AddOrUpdate(postHandler, priority, (_, _) => priority);
         }
 
         /// <summary>
@@ -227,22 +205,13 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            lock (_preHandlers)
-            {
-                _preHandlers.Remove(type);
-            }
+            _preHandlers.Remove(type, out _);
         }
 
         /// <summary>
         /// Removes all pre-event handlers for all event types.
         /// </summary>
-        public void ClearPreHandlers()
-        {
-            lock (_preHandlers)
-            {
-                _preHandlers.Clear();
-            }
-        }
+        public void ClearPreHandlers() => _preHandlers.Clear();
 
         /// <summary>
         /// Removes all post-event handlers for the specified event type.
@@ -261,21 +230,12 @@ namespace OoLunar.AsyncEvents
                 throw new ArgumentException($"Type must implement {nameof(AsyncEventArgs)}", nameof(type));
             }
 
-            lock (_postHandlers)
-            {
-                _postHandlers.Remove(type);
-            }
+            _postHandlers.Remove(type, out _);
         }
 
         /// <summary>
         /// Removes all post-event handlers for all event types.
         /// </summary>
-        public void ClearPostHandlers()
-        {
-            lock (_postHandlers)
-            {
-                _postHandlers.Clear();
-            }
-        }
+        public void ClearPostHandlers() => _postHandlers.Clear();
     }
 }

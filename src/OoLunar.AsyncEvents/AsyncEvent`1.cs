@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using OoLunar.AsyncEvents.AsyncEventClosures;
 
@@ -38,6 +39,11 @@ namespace OoLunar.AsyncEvents
         protected AsyncEventPostHandler<TEventArgs> _postEventHandlerDelegate;
 
         /// <summary>
+        /// A semaphore that ensures changes made to the handlers are thread-safe.
+        /// </summary>
+        protected SemaphoreSlim _semaphore = new(1, 1);
+
+        /// <summary>
         /// Creates a new instance of <see cref="AsyncEvent{TEventArgs}"/>.
         /// </summary>
         public AsyncEvent()
@@ -49,7 +55,8 @@ namespace OoLunar.AsyncEvents
         /// <inheritdoc />
         public void AddPreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            lock (_preHandlers)
+            _semaphore.Wait();
+            try
             {
                 if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
                 {
@@ -63,12 +70,17 @@ namespace OoLunar.AsyncEvents
 
                 handlers.Add(handler);
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         /// <inheritdoc />
         public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            lock (_postHandlers)
+            _semaphore.Wait();
+            try
             {
                 if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
                 {
@@ -82,12 +94,17 @@ namespace OoLunar.AsyncEvents
 
                 handlers.Add(handler);
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         /// <inheritdoc />
         public bool RemovePreHandler(AsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            lock (_preHandlers)
+            _semaphore.Wait();
+            try
             {
                 if (!_preHandlers.TryGetValue(priority, out List<AsyncEventPreHandler<TEventArgs>>? handlers))
                 {
@@ -104,12 +121,17 @@ namespace OoLunar.AsyncEvents
 
                 return true;
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         /// <inheritdoc />
         public bool RemovePostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            lock (_postHandlers)
+            _semaphore.Wait();
+            try
             {
                 if (!_postHandlers.TryGetValue(priority, out List<AsyncEventPostHandler<TEventArgs>>? handlers))
                 {
@@ -126,23 +148,37 @@ namespace OoLunar.AsyncEvents
 
                 return true;
             }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         /// <inheritdoc />
         public void ClearPreHandlers()
         {
-            lock (_preHandlers)
+            _semaphore.Wait();
+            try
             {
                 _preHandlers.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
         /// <inheritdoc />
         public void ClearPostHandlers()
         {
-            lock (_postHandlers)
+            _semaphore.Wait();
+            try
             {
                 _postHandlers.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
             }
         }
 
