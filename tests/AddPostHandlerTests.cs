@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Attributes;
@@ -8,7 +9,7 @@ namespace OoLunar.AsyncEvents.Tests
     [TestClass]
     public sealed class AddPostHandlerTests
     {
-        private static ValueTask PostHandler(TestAsyncEventArgs eventArgs) => ValueTask.CompletedTask;
+        private static ValueTask PostHandler(TestAsyncEventArgs eventArgs, CancellationToken cancellationToken) => ValueTask.CompletedTask;
 
         [TestMethod, AsyncEventDataSource]
         public void AddPostHandler(IAsyncEvent<TestAsyncEventArgs> asyncEvent)

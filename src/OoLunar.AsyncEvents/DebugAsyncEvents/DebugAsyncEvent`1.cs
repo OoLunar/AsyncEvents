@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -83,18 +84,18 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
         }
 
         /// <inheritdoc />
-        public async ValueTask InvokePostHandlersAsync(TEventArgs eventArgs)
+        public async ValueTask InvokePostHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Invoking all {Count} post-handlers.", _asyncEvent.PostHandlers.Count);
-            await _asyncEvent.InvokePostHandlersAsync(eventArgs);
+            await _asyncEvent.InvokePostHandlersAsync(eventArgs, cancellationToken);
             _logger.LogDebug("Invoked all {Count} post-handlers.", _asyncEvent.PostHandlers.Count);
         }
 
         /// <inheritdoc />
-        public async ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs)
+        public async ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Invoking all {Count} pre-handlers.", _asyncEvent.PreHandlers.Count);
-            bool result = await _asyncEvent.InvokePreHandlersAsync(eventArgs);
+            bool result = await _asyncEvent.InvokePreHandlersAsync(eventArgs, cancellationToken);
             _logger.LogDebug("Invoked all {Count} pre-handlers.", _asyncEvent.PreHandlers.Count);
             return result;
         }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents.AsyncEventClosures
@@ -16,7 +17,7 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
             _handlers = handlers;
         }
 
-        public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs)
+        public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             bool result = true;
             List<Exception>? errors = null;
@@ -24,7 +25,7 @@ namespace OoLunar.AsyncEvents.AsyncEventClosures
             {
                 try
                 {
-                    result &= await _handlers[i](eventArgs);
+                    result &= await _handlers[i](eventArgs, cancellationToken);
                 }
                 catch (Exception error)
                 {

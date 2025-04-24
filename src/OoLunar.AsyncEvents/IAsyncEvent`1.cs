@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents
@@ -54,7 +55,7 @@ namespace OoLunar.AsyncEvents
 
                 // Else if the method's signature does not match the expected signature, skip the method
                 ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1 || !parameters[0].ParameterType.IsAssignableTo(typeof(TEventArgs)))
+                if (parameters.Length != 2 || !parameters[0].ParameterType.IsAssignableTo(typeof(TEventArgs)) || parameters[1].ParameterType != typeof(CancellationToken))
                 {
                     continue;
                 }
@@ -108,7 +109,7 @@ namespace OoLunar.AsyncEvents
         /// Removes a pre-handler from the event.
         /// </summary>
         /// <remarks>
-        /// Warning: The handler will still be invoked until <see cref="IAsyncEvent.PrepareAsync()"/> is called.
+        /// Warning: The handler will still be invoked until <see cref="IAsyncEvent.PrepareAsync(CancellationToken)"/> is called.
         /// </remarks>
         /// <param name="handler">The pre-handler delegate to remove.</param>
         /// <param name="priority">The priority of the handler to remove.</param>
@@ -119,7 +120,7 @@ namespace OoLunar.AsyncEvents
         /// Removes a post-handler from the event.
         /// </summary>
         /// <remarks>
-        /// Warning: The handler will still be invoked until <see cref="IAsyncEvent.PrepareAsync()"/> is called.
+        /// Warning: The handler will still be invoked until <see cref="IAsyncEvent.PrepareAsync(CancellationToken)"/> is called.
         /// </remarks>
         /// <param name="handler">The post-handler delegate to remove.</param>
         /// <param name="priority">The priority of the handler to remove.</param>
@@ -133,8 +134,9 @@ namespace OoLunar.AsyncEvents
         /// Warning: Exceptions thrown by handlers will not be caught by this method. Any and all exception handling should be done by the caller.
         /// </remarks>
         /// <param name="eventArgs">The event arguments to pass to the handlers.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
         /// <returns><see langword="true"/> if all pre-handlers returned <see langword="true"/>; otherwise, <see langword="false"/>.</returns>
-        public ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs);
+        public ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Invokes the post-handlers with the specified event arguments.
@@ -143,8 +145,9 @@ namespace OoLunar.AsyncEvents
         /// Warning: Exceptions thrown by handlers will not be caught by this method. Any and all exception handling should be done by the caller.
         /// </remarks>
         /// <param name="eventArgs">The event arguments to pass to the handlers.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
         /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
-        public ValueTask InvokePostHandlersAsync(TEventArgs eventArgs);
+        public ValueTask InvokePostHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Invokes the event with the specified event arguments.
@@ -155,22 +158,23 @@ namespace OoLunar.AsyncEvents
         /// Warning: Exceptions thrown by handlers will not be caught by this method. Any and all exception handling should be done by the caller.
         /// </remarks>
         /// <param name="eventArgs">The event arguments to pass to the handlers.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
         /// <returns><see langword="true"/> if all pre-handlers returned <see langword="true"/>; otherwise, <see langword="false"/>.</returns>
-        public async ValueTask<bool> InvokeAsync(TEventArgs eventArgs)
+        public async ValueTask<bool> InvokeAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
-            if (!await InvokePreHandlersAsync(eventArgs))
+            if (!await InvokePreHandlersAsync(eventArgs, cancellationToken))
             {
                 return false;
             }
 
-            await InvokePostHandlersAsync(eventArgs);
+            await InvokePostHandlersAsync(eventArgs, cancellationToken);
             return true;
         }
 
-        ValueTask<bool> IAsyncEvent.InvokePreHandlersAsync(AsyncEventArgs eventArgs) => InvokePreHandlersAsync((TEventArgs)eventArgs);
+        ValueTask<bool> IAsyncEvent.InvokePreHandlersAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken) => InvokePreHandlersAsync((TEventArgs)eventArgs, cancellationToken);
 
-        ValueTask IAsyncEvent.InvokePostHandlersAsync(AsyncEventArgs eventArgs) => InvokePostHandlersAsync((TEventArgs)eventArgs);
+        ValueTask IAsyncEvent.InvokePostHandlersAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken) => InvokePostHandlersAsync((TEventArgs)eventArgs, cancellationToken);
 
-        ValueTask<bool> IAsyncEvent.InvokeAsync(AsyncEventArgs eventArgs) => InvokeAsync((TEventArgs)eventArgs);
+        ValueTask<bool> IAsyncEvent.InvokeAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken) => InvokeAsync((TEventArgs)eventArgs, cancellationToken);
     }
 }

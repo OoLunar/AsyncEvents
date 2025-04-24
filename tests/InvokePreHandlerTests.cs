@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Attributes;
@@ -18,7 +19,7 @@ namespace OoLunar.AsyncEvents.Tests
         // InvokePreHandler_Instance_FourHandlers_PriorityAsync
         private static bool _invoked;
 
-        private static ValueTask<bool> PreHandler(TestAsyncEventArgs _)
+        private static ValueTask<bool> PreHandler(TestAsyncEventArgs _, CancellationToken __)
         {
             _invoked = true;
             return ValueTask.FromResult(true);
@@ -40,7 +41,7 @@ namespace OoLunar.AsyncEvents.Tests
         public async ValueTask InvokePreHandler_InstanceAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             bool invoked = false;
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked = true;
                 return ValueTask.FromResult(true);
@@ -55,7 +56,7 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod, AsyncEventDataSource]
         public async ValueTask InvokePreHandler_Instance_ThrowsExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddPreHandler(_ => throw new InvalidOperationException());
+            asyncEvent.AddPreHandler((_, _) => throw new InvalidOperationException());
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await asyncEvent.InvokePreHandlersAsync(new TestAsyncEventArgs()));
         }
 
@@ -64,13 +65,13 @@ namespace OoLunar.AsyncEvents.Tests
         {
             bool invoked1 = false;
             bool invoked2 = false;
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.FromResult(true);
             });
 
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.FromResult(true);
@@ -87,13 +88,13 @@ namespace OoLunar.AsyncEvents.Tests
         public async ValueTask InvokePreHandler_Instance_TwoHandlers_ThrowsExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             bool invoked1 = false;
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.FromResult(true);
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPreHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Low);
+            asyncEvent.AddPreHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Low);
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await asyncEvent.InvokePreHandlersAsync(new TestAsyncEventArgs()));
             Assert.IsTrue(invoked1);
         }
@@ -101,8 +102,8 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod, AsyncEventDataSource]
         public async ValueTask InvokePreHandler_Instance_TwoHandlers_ThrowsAggregateExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddPreHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Normal);
-            asyncEvent.AddPreHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Low);
+            asyncEvent.AddPreHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Normal);
+            asyncEvent.AddPreHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Low);
 
             AggregateException aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await asyncEvent.InvokePreHandlersAsync(new TestAsyncEventArgs()));
             Assert.AreEqual(2, aggregateException.InnerExceptions.Count);
@@ -115,13 +116,13 @@ namespace OoLunar.AsyncEvents.Tests
         {
             bool invoked1 = false;
             bool invoked2 = false;
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.FromResult(true);
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.FromResult(true);
@@ -141,25 +142,25 @@ namespace OoLunar.AsyncEvents.Tests
             bool invoked2 = false;
             bool invoked3 = false;
             bool invoked4 = false;
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.FromResult(true);
             }, AsyncEventPriority.Low);
 
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.FromResult(true);
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked3 = true;
                 return ValueTask.FromResult(true);
             }, AsyncEventPriority.High);
 
-            asyncEvent.AddPreHandler(_ =>
+            asyncEvent.AddPreHandler((_, _) =>
             {
                 invoked4 = true;
                 return ValueTask.FromResult(true);

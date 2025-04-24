@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using OoLunar.AsyncEvents.DebugAsyncEvents;
@@ -43,7 +44,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
         {
             // Generate a anonymous delegate through expressions, since adding
             // the same delegate multiple times will throw an exception
-            Expression<Func<AsyncEventArgs, ValueTask>> postHandlerExpression = eventArgs => ValueTask.CompletedTask;
+            Expression<Func<AsyncEventArgs, CancellationToken, ValueTask>> postHandlerExpression = (eventArgs, cancellationToken) => ValueTask.CompletedTask;
 
             for (int i = 0; i < handlerCount; i++)
             {
@@ -55,7 +56,7 @@ namespace OoLunar.AsyncEvents.Benchmarks
         {
             // Generate a anonymous delegate through expressions, since adding
             // the same delegate multiple times will throw an exception
-            Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandlerExpression = eventArgs => ValueTask.FromResult(true);
+            Expression<Func<AsyncEventArgs, CancellationToken, ValueTask<bool>>> preHandlerExpression = (eventArgs, cancellationToken) => ValueTask.FromResult(true);
 
             for (int i = 0; i < handlerCount; i++)
             {
@@ -67,8 +68,8 @@ namespace OoLunar.AsyncEvents.Benchmarks
         {
             // Generate a anonymous delegate through expressions, since adding
             // the same delegate multiple times will throw an exception
-            Expression<Func<AsyncEventArgs, ValueTask<bool>>> preHandlerExpression = eventArgs => ValueTask.FromResult(true);
-            Expression<Func<AsyncEventArgs, ValueTask>> postHandlerExpression = eventArgs => ValueTask.CompletedTask;
+            Expression<Func<AsyncEventArgs, CancellationToken, ValueTask<bool>>> preHandlerExpression = (eventArgs, cancellationToken) => ValueTask.FromResult(true);
+            Expression<Func<AsyncEventArgs, CancellationToken, ValueTask>> postHandlerExpression = (eventArgs, cancellationToken) => ValueTask.CompletedTask;
 
             IEnumerable<double> handlerCounts = Enumerable.Range(0, HandlerCountsPow2).Select(x => Math.Pow(2, x));
             foreach (double handlerCount in handlerCounts)
@@ -109,8 +110,8 @@ namespace OoLunar.AsyncEvents.Benchmarks
         {
             private static readonly Exception _exception = new();
 
-            public ValueTask<bool> ThrowPreHandler(AsyncEventArgs eventArgs) => throw _exception;
-            public ValueTask ThrowPostHandler(AsyncEventArgs eventArgs) => throw _exception;
+            public ValueTask<bool> ThrowPreHandler(AsyncEventArgs eventArgs, CancellationToken cancellationToken = default) => throw _exception;
+            public ValueTask ThrowPostHandler(AsyncEventArgs eventArgs, CancellationToken cancellationToken = default) => throw _exception;
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -15,13 +16,13 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
             _logger = logger;
         }
 
-        public ValueTask<bool> StartPreHandlerAsync(TEventArgs eventArgs)
+        public ValueTask<bool> StartPreHandlerAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Invoking {Priority} priority pre-handlers.", Priority);
             return ValueTask.FromResult(true);
         }
 
-        public ValueTask StartPostHandlerAsync(TEventArgs eventArgs)
+        public ValueTask StartPostHandlerAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Invoking {Priority} priority post-handlers.", Priority);
             return ValueTask.CompletedTask;

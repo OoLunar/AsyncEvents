@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Attributes;
@@ -18,7 +19,7 @@ namespace OoLunar.AsyncEvents.Tests
         // InvokePostHandler_Instance_FourHandlers_PriorityAsync
         private static bool _invoked;
 
-        private static ValueTask PostHandler(TestAsyncEventArgs _)
+        private static ValueTask PostHandler(TestAsyncEventArgs _, CancellationToken cancellationToken)
         {
             _invoked = true;
             return ValueTask.CompletedTask;
@@ -39,7 +40,7 @@ namespace OoLunar.AsyncEvents.Tests
         public async ValueTask InvokePostHandler_InstanceAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             bool invoked = false;
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked = true;
                 return ValueTask.CompletedTask;
@@ -53,7 +54,7 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod, AsyncEventDataSource]
         public async ValueTask InvokePostHandler_Instance_ThrowsExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddPostHandler(_ => throw new InvalidOperationException());
+            asyncEvent.AddPostHandler((_, _) => throw new InvalidOperationException());
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await asyncEvent.InvokePostHandlersAsync(new TestAsyncEventArgs()));
         }
 
@@ -62,13 +63,13 @@ namespace OoLunar.AsyncEvents.Tests
         {
             bool invoked1 = false;
             bool invoked2 = false;
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.CompletedTask;
             });
 
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.CompletedTask;
@@ -84,13 +85,13 @@ namespace OoLunar.AsyncEvents.Tests
         public async ValueTask InvokePostHandler_Instance_TwoHandlers_ThrowsExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             bool invoked1 = false;
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.CompletedTask;
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPostHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Low);
+            asyncEvent.AddPostHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Low);
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(async () => await asyncEvent.InvokePostHandlersAsync(new TestAsyncEventArgs()));
             Assert.IsTrue(invoked1);
         }
@@ -98,8 +99,8 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod, AsyncEventDataSource]
         public async ValueTask InvokePostHandler_Instance_TwoHandlers_ThrowsAggregateExceptionAsync(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddPostHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Normal);
-            asyncEvent.AddPostHandler(_ => throw new InvalidOperationException(), AsyncEventPriority.Low);
+            asyncEvent.AddPostHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Normal);
+            asyncEvent.AddPostHandler((_, _) => throw new InvalidOperationException(), AsyncEventPriority.Low);
 
             AggregateException aggregateException = await Assert.ThrowsExceptionAsync<AggregateException>(async () => await asyncEvent.InvokePostHandlersAsync(new TestAsyncEventArgs()));
             Assert.AreEqual(2, aggregateException.InnerExceptions.Count);
@@ -112,13 +113,13 @@ namespace OoLunar.AsyncEvents.Tests
         {
             bool invoked1 = false;
             bool invoked2 = false;
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.CompletedTask;
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.CompletedTask;
@@ -137,25 +138,25 @@ namespace OoLunar.AsyncEvents.Tests
             bool invoked2 = false;
             bool invoked3 = false;
             bool invoked4 = false;
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked1 = true;
                 return ValueTask.CompletedTask;
             }, AsyncEventPriority.Low);
 
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked2 = true;
                 return ValueTask.CompletedTask;
             }, AsyncEventPriority.Normal);
 
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked3 = true;
                 return ValueTask.CompletedTask;
             }, AsyncEventPriority.High);
 
-            asyncEvent.AddPostHandler(_ =>
+            asyncEvent.AddPostHandler((_, _) =>
             {
                 invoked4 = true;
                 return ValueTask.CompletedTask;

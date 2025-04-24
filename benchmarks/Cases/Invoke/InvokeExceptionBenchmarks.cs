@@ -69,7 +69,7 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases.Invoke
                     _asyncEvent += postHandler;
                 }
 
-                _asyncEvent += args => throw _exception;
+                _asyncEvent += (args, cancellation) => throw _exception;
 
                 AsyncEventPostHandler<AsyncEventArgs> asyncEvent = _asyncEvent;
                 yield return [asyncEvent, ".NET Event", _asyncEvent.GetInvocationList().Length];
@@ -92,7 +92,7 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases.Invoke
                 // Fill the remaining event handlers with exceptions
                 for (int i = 0; i < Math.Min(4, handlerCount); i++)
                 {
-                    _asyncEvent += args => throw _exception;
+                    _asyncEvent += (args, cancellation) => throw _exception;
                 }
 
                 AsyncEventPostHandler<AsyncEventArgs> asyncEvent = _asyncEvent;

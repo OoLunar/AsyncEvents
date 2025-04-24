@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents
@@ -132,7 +133,7 @@ namespace OoLunar.AsyncEvents
 
                 // Else if the method's signature does not match the expected signature, skip the method
                 ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 1 || (parameters[0].ParameterType != typeof(AsyncEventArgs) && !parameters[0].ParameterType.IsSubclassOf(typeof(AsyncEventArgs))))
+                if (parameters.Length != 2 || !parameters[0].ParameterType.IsAssignableTo(typeof(AsyncEventArgs)) || parameters[1].ParameterType != typeof(CancellationToken))
                 {
                     continue;
                 }

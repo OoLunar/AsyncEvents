@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
@@ -16,12 +17,12 @@ namespace OoLunar.AsyncEvents.DebugAsyncEvents
             _logger = logger;
         }
 
-        public async ValueTask StartPostHandlerAsync(TEventArgs eventArgs)
+        public async ValueTask StartPostHandlerAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Started invoking post-handler '{Handler}'", PostHandler);
             try
             {
-                await PostHandler(eventArgs);
+                await PostHandler(eventArgs, cancellationToken);
                 _logger.LogDebug("Finished invoking post-handler '{Handler}'", PostHandler);
             }
             catch (Exception error)

@@ -17,15 +17,15 @@ namespace OoLunar.AsyncEvents.ParallelAsyncEvents
             _handlers = handlers;
         }
 
-        public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs)
+        public async ValueTask<bool> InvokeAsync(TAsyncEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
             bool result = true;
             List<Exception>? errors = null;
-            await Parallel.ForAsync(0, _handlers.Length, async (int i, CancellationToken cancellationToken) =>
+            await Parallel.ForAsync(0, _handlers.Length, cancellationToken, async (int i, CancellationToken cancellationToken) =>
             {
                 try
                 {
-                    result &= await _handlers[i](eventArgs);
+                    result &= await _handlers[i](eventArgs, cancellationToken);
                 }
                 catch (Exception error)
                 {

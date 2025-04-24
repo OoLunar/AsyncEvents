@@ -183,11 +183,11 @@ namespace OoLunar.AsyncEvents
         }
 
         /// <inheritdoc />
-        public async ValueTask<bool> InvokeAsync(TEventArgs eventArgs)
+        public async ValueTask<bool> InvokeAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
-            if (await InvokePreHandlersAsync(eventArgs))
+            if (await InvokePreHandlersAsync(eventArgs, cancellationToken))
             {
-                await InvokePostHandlersAsync(eventArgs);
+                await InvokePostHandlersAsync(eventArgs, cancellationToken);
                 return true;
             }
 
@@ -195,10 +195,10 @@ namespace OoLunar.AsyncEvents
         }
 
         /// <inheritdoc />
-        public ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs) => _preEventHandlerDelegate(eventArgs);
+        public ValueTask<bool> InvokePreHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default) => _preEventHandlerDelegate(eventArgs, cancellationToken);
 
         /// <inheritdoc />
-        public ValueTask InvokePostHandlersAsync(TEventArgs eventArgs) => _postEventHandlerDelegate(eventArgs);
+        public ValueTask InvokePostHandlersAsync(TEventArgs eventArgs, CancellationToken cancellationToken = default) => _postEventHandlerDelegate(eventArgs, cancellationToken);
 
         /// <inheritdoc />
         public void Prepare()
@@ -260,22 +260,22 @@ namespace OoLunar.AsyncEvents
         /// <summary>
         /// An empty pre-handler that always returns <see langword="true"/>.
         /// </summary>
-        protected static ValueTask<bool> EmptyPreHandler(TEventArgs _) => ValueTask.FromResult(true);
+        protected static ValueTask<bool> EmptyPreHandler(TEventArgs _, CancellationToken __) => ValueTask.FromResult(true);
 
         /// <summary>
         /// An empty post-handler that does nothing.
         /// </summary>
-        protected static ValueTask EmptyPostHandler(TEventArgs _) => ValueTask.CompletedTask;
+        protected static ValueTask EmptyPostHandler(TEventArgs _, CancellationToken __) => ValueTask.CompletedTask;
 
         /// <summary>
         /// A lazy pre-handler that prepares the event before invoking the actual pre-handlers.
         /// This should only be called on the first unprepared invocation of the event, as it will
         /// replace itself through the preparation process.
         /// </summary>
-        protected virtual ValueTask<bool> LazyPreHandler(TEventArgs eventArgs)
+        protected virtual ValueTask<bool> LazyPreHandler(TEventArgs eventArgs, CancellationToken cancellationToken)
         {
             Prepare();
-            return _preEventHandlerDelegate(eventArgs);
+            return _preEventHandlerDelegate(eventArgs, cancellationToken);
         }
 
         /// <summary>
@@ -283,10 +283,10 @@ namespace OoLunar.AsyncEvents
         /// This should only be called on the first unprepared invocation of the event, as it will
         /// replace itself through the preparation process.
         /// </summary>
-        protected virtual ValueTask LazyPostHandler(TEventArgs eventArgs)
+        protected virtual ValueTask LazyPostHandler(TEventArgs eventArgs, CancellationToken cancellationToken)
         {
             Prepare();
-            return _postEventHandlerDelegate(eventArgs);
+            return _postEventHandlerDelegate(eventArgs, cancellationToken);
         }
 
         private Dictionary<AsyncEventPriority, IReadOnlyList<AsyncEventPreHandler<TEventArgs>>> TransformPreHandlers()

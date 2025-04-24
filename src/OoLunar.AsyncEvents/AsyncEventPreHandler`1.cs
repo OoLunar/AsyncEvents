@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents
@@ -6,7 +7,8 @@ namespace OoLunar.AsyncEvents
     /// Represents a method/delegate that handles an asynchronous event.
     /// </summary>
     /// <param name="eventArgs">The event arguments.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <typeparam name="T">The type of the event arguments.</typeparam>
     /// <returns>Whether the event should be "cancelled".</returns>
-    public delegate ValueTask<bool> AsyncEventPreHandler<T>(T eventArgs) where T : AsyncEventArgs;
+    public delegate ValueTask<bool> AsyncEventPreHandler<T>(T eventArgs, CancellationToken cancellationToken = default) where T : AsyncEventArgs;
 }

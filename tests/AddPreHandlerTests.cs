@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Attributes;
@@ -8,7 +9,7 @@ namespace OoLunar.AsyncEvents.Tests
     [TestClass]
     public sealed class AddPreHandlerTests
     {
-        private static ValueTask<bool> PreHandler(TestAsyncEventArgs eventArgs) => ValueTask.FromResult(true);
+        private static ValueTask<bool> PreHandler(TestAsyncEventArgs eventArgs, CancellationToken cancellationToken) => ValueTask.FromResult(true);
 
         [TestMethod, AsyncEventDataSource]
         public void AddPreHandler(IAsyncEvent<TestAsyncEventArgs> asyncEvent)

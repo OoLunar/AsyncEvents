@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace OoLunar.AsyncEvents
@@ -43,27 +44,27 @@ namespace OoLunar.AsyncEvents
         /// <summary>
         /// Efficiently prepares the event for invocation by compiling the pre/post-handlers into a single delegate.
         /// </summary>
-        public ValueTask PrepareAsync()
+        public ValueTask PrepareAsync(CancellationToken cancellationToken = default)
         {
             Prepare();
             return default;
         }
 
-        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePreHandlersAsync(TEventArgs)"/>
-        public ValueTask<bool> InvokePreHandlersAsync(AsyncEventArgs eventArgs);
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePreHandlersAsync(TEventArgs, CancellationToken)"/>
+        public ValueTask<bool> InvokePreHandlersAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken = default);
 
-        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePostHandlersAsync(TEventArgs)"/>
-        public ValueTask InvokePostHandlersAsync(AsyncEventArgs eventArgs);
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokePostHandlersAsync(TEventArgs, CancellationToken)"/>
+        public ValueTask InvokePostHandlersAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken = default);
 
-        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokeAsync(TEventArgs)"/>
-        public async ValueTask<bool> InvokeAsync(AsyncEventArgs eventArgs)
+        /// <inheritdoc cref="IAsyncEvent{TEventArgs}.InvokeAsync(TEventArgs, CancellationToken)"/>
+        public async ValueTask<bool> InvokeAsync(AsyncEventArgs eventArgs, CancellationToken cancellationToken = default)
         {
-            if (!await InvokePreHandlersAsync(eventArgs))
+            if (!await InvokePreHandlersAsync(eventArgs, cancellationToken))
             {
                 return false;
             }
 
-            await InvokePostHandlersAsync(eventArgs);
+            await InvokePostHandlersAsync(eventArgs, cancellationToken);
             return true;
         }
     }
