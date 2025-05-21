@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OoLunar.AsyncEvents/OoLunar.AsyncEvents.csproj" />
+  </Folder>
+  <Project Path="benchmarks/OoLunar.Benchmarks.csproj" />
+  <Project Path="tests/OoLunar.AsyncEvents.Tests.csproj" />
+</Solution>
