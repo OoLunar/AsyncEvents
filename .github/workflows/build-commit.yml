@@ -4,8 +4,8 @@ on:
   push:
     paths:
       - ".github/workflows/build-commit.yml"
-      - "*.cs"
-      - "*.sln"
+      - "**/*.cs"
+      - "**/*.slnx"
   workflow_dispatch:
 
 env:

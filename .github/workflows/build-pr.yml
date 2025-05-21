@@ -8,8 +8,8 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - "*.cs"
-      - "*.sln"
+      - "**/*.cs"
+      - "**/*.slnx"
 
 env:
   DOTNET_NOLOGO: 1
