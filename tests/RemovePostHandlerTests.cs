@@ -13,7 +13,7 @@ namespace OoLunar.AsyncEvents.Tests
             EventHandlers handlers = new();
             asyncEvent.AddHandlers(handlers);
 
-            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.PostHandler));
+            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.InvokeAsync));
             Assert.AreEqual(0, asyncEvent.PostHandlers.Count);
         }
 
@@ -23,8 +23,8 @@ namespace OoLunar.AsyncEvents.Tests
             EventHandlers handlers = new();
             asyncEvent.AddHandlers(handlers);
 
-            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.PostHandler));
-            Assert.IsFalse(asyncEvent.RemovePostHandler(handlers.PostHandler));
+            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.InvokeAsync));
+            Assert.IsFalse(asyncEvent.RemovePostHandler(handlers.InvokeAsync));
             Assert.AreEqual(0, asyncEvent.PostHandlers.Count);
         }
 
@@ -32,9 +32,9 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePostHandler_Instance_Priority(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddPostHandler(handlers.PostHandler, AsyncEventPriority.High);
+            asyncEvent.AddPostHandler(handlers.InvokeAsync, AsyncEventPriority.High);
 
-            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.PostHandler, AsyncEventPriority.High));
+            Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.InvokeAsync, AsyncEventPriority.High));
             Assert.AreEqual(0, asyncEvent.PostHandlers.Count);
         }
 
@@ -51,7 +51,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePostHandler_Unregistered(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddPostHandler(handlers.PostHandler);
+            asyncEvent.AddPostHandler(handlers.InvokeAsync);
 
             Assert.IsFalse(asyncEvent.RemovePostHandler(StaticEventHandlers.PostHandler));
             Assert.AreEqual(1, asyncEvent.PostHandlers.Count);

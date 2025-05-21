@@ -5,10 +5,10 @@ namespace OoLunar.AsyncEvents.Benchmarks.Data
 {
     public sealed class StaticEventHandlers
     {
-        [AsyncEventHandler]
+        [AsyncEventHandlerPriority]
         public static ValueTask<bool> PreHandlerAsync(AsyncEventArgs _, CancellationToken __) => ValueTask.FromResult(true);
 
-        [AsyncEventHandler]
+        [AsyncEventHandlerPriority]
         public static ValueTask PostHandlerAsync(AsyncEventArgs _, CancellationToken __) => ValueTask.CompletedTask;
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 namespace OoLunar.AsyncEvents
 {
@@ -13,11 +14,6 @@ namespace OoLunar.AsyncEvents
     {
         private static readonly MethodInfo _getAsyncEventGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(GetAsyncEvent), BindingFlags.Public | BindingFlags.Instance, [])!;
         private static readonly MethodInfo _prepareGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(Prepare), BindingFlags.Public | BindingFlags.Instance, [])!;
-        private static readonly MethodInfo _addPreHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPreHandler), BindingFlags.Public | BindingFlags.Instance)!;
-        private static readonly MethodInfo _addPostHandlerGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(AddPostHandler), BindingFlags.Public | BindingFlags.Instance)!;
-        private static readonly MethodInfo _clearPreHandlersGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(ClearPreHandlers), BindingFlags.Public | BindingFlags.Instance, [])!;
-        private static readonly MethodInfo _clearPostHandlersGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(ClearPostHandlers), BindingFlags.Public | BindingFlags.Instance, [])!;
-        private static readonly MethodInfo _clearHandlersGenericMethod = typeof(AsyncEventContainer).GetMethod(nameof(ClearHandlers), BindingFlags.Public | BindingFlags.Instance, [])!;
 
         protected readonly ConcurrentDictionary<Type, IAsyncEvent> _serverEvents = [];
         protected readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, AsyncEventPriority>> _postHandlers = [];
@@ -58,6 +54,12 @@ namespace OoLunar.AsyncEvents
         public IAsyncEvent GetAsyncEvent(Type type)
         {
             ThrowIfNullOrNotAsyncEventArgs(type);
+            if (_serverEvents.TryGetValue(type, out IAsyncEvent? value))
+            {
+                return value;
+            }
+
+            // Call GetAsyncEvent<T> through reflection
             MethodInfo genericMethod = _getAsyncEventGenericMethod.MakeGenericMethod(type);
             return (IAsyncEvent)genericMethod.Invoke(this, [])!;
         }
@@ -89,8 +91,11 @@ namespace OoLunar.AsyncEvents
             genericMethod.Invoke(this, []);
         }
 
+        public void AddPreHandler<T>(IAsyncEventPreHandler<T> preHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
+            => AddPreHandler<T>(preHandler.PreInvokeAsync, priority);
+
         /// <inheritdoc />
-        public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
+        public void AddPreHandler<T>(AsyncEventPreHandler<T> preHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
         {
             ConcurrentDictionary<object, AsyncEventPriority> preHandlers = _preHandlers.GetOrAdd(typeof(T), []);
             preHandlers.AddOrUpdate(preHandler, priority, (_, _) => priority);
@@ -99,15 +104,28 @@ namespace OoLunar.AsyncEvents
         public void AddPreHandler(IAsyncEventPreHandler preHandler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             ThrowIfNullOrNotAsyncEventArgs(preHandler.EventArgsType);
-            MethodInfo genericMethod = _addPreHandlerGenericMethod.MakeGenericMethod(preHandler.EventArgsType);
-            genericMethod.Invoke(this, [(object)preHandler.PreInvokeAsync, priority]);
+            void AddGenericPreHandler<T>(IAsyncEventPreHandler preHandler, AsyncEventPriority priority) where T : AsyncEventArgs
+            {
+                if (preHandler is IAsyncEventPreHandler<T> genericPreHandler)
+                {
+                    AddPreHandler<T>(genericPreHandler, priority);
+                }
+                else
+                {
+                    AddPreHandler((T eventArgs, CancellationToken cancellationToken) => preHandler.PreInvokeAsync(eventArgs, cancellationToken), priority);
+                }
+            }
+
+            MethodInfo handler = ((Delegate)AddGenericPreHandler<AsyncEventArgs>).Method.GetGenericMethodDefinition();
+            MethodInfo genericMethod = handler.MakeGenericMethod(preHandler.EventArgsType);
+            genericMethod.Invoke(this, [preHandler, priority]);
         }
 
-        public void AddPreHandler<T>(IAsyncEventPreHandler<T> preHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
-            => AddPreHandler<T>(preHandler.PreInvokeAsync, priority);
+        public void AddPostHandler<T>(IAsyncEventPostHandler<T> postHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
+            => AddPostHandler<T>(postHandler.InvokeAsync, priority);
 
         /// <inheritdoc />
-        public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
+        public void AddPostHandler<T>(AsyncEventPostHandler<T> postHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
         {
             ConcurrentDictionary<object, AsyncEventPriority> postHandlers = _postHandlers.GetOrAdd(typeof(T), []);
             postHandlers.AddOrUpdate(postHandler, priority, (_, _) => priority);
@@ -116,12 +134,22 @@ namespace OoLunar.AsyncEvents
         public void AddPostHandler(IAsyncEventPostHandler postHandler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
             ThrowIfNullOrNotAsyncEventArgs(postHandler.EventArgsType);
-            MethodInfo genericMethod = _addPostHandlerGenericMethod.MakeGenericMethod(postHandler.EventArgsType);
-            genericMethod.Invoke(this, [(object)postHandler.InvokeAsync, priority]);
-        }
+            void AddGenericPostHandler<T>(IAsyncEventPostHandler postHandler, AsyncEventPriority priority) where T : AsyncEventArgs
+            {
+                if (postHandler is IAsyncEventPostHandler<T> genericPostHandler)
+                {
+                    AddPostHandler<T>(genericPostHandler, priority);
+                }
+                else
+                {
+                    AddPostHandler((T eventArgs, CancellationToken cancellationToken) => postHandler.InvokeAsync(eventArgs, cancellationToken), priority);
+                }
+            }
 
-        public void AddPostHandler<T>(IAsyncEventPostHandler<T> postHandler, AsyncEventPriority priority = AsyncEventPriority.Normal) where T : AsyncEventArgs
-            => AddPostHandler<T>(postHandler.InvokeAsync, priority);
+            MethodInfo handler = ((Delegate)AddGenericPostHandler<AsyncEventArgs>).Method.GetGenericMethodDefinition();
+            MethodInfo genericMethod = handler.MakeGenericMethod(postHandler.EventArgsType);
+            genericMethod.Invoke(this, [postHandler, priority]);
+        }
 
         public void AddHandlers(object instance)
         {
@@ -129,13 +157,13 @@ namespace OoLunar.AsyncEvents
             if (instance is IAsyncEventPreHandler preHandler)
             {
                 Delegate handler = preHandler.PreInvokeAsync;
-                AddPreHandler(preHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+                AddPreHandler(preHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerPriorityAttribute>()?.Priority ?? AsyncEventPriority.Normal);
             }
 
             if (instance is IAsyncEventPostHandler postHandler)
             {
                 Delegate handler = postHandler.InvokeAsync;
-                AddPostHandler(postHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+                AddPostHandler(postHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerPriorityAttribute>()?.Priority ?? AsyncEventPriority.Normal);
             }
         }
 
@@ -145,8 +173,7 @@ namespace OoLunar.AsyncEvents
         public void ClearPreHandlers(Type type)
         {
             ThrowIfNullOrNotAsyncEventArgs(type);
-            MethodInfo genericMethod = _clearPreHandlersGenericMethod.MakeGenericMethod(type);
-            genericMethod.Invoke(this, []);
+            _preHandlers.Remove(type, out _);
         }
 
         /// <inheritdoc />
@@ -158,8 +185,7 @@ namespace OoLunar.AsyncEvents
         public void ClearPostHandlers(Type type)
         {
             ThrowIfNullOrNotAsyncEventArgs(type);
-            MethodInfo genericMethod = _clearPostHandlersGenericMethod.MakeGenericMethod(type);
-            genericMethod.Invoke(this, []);
+            _postHandlers.Remove(type, out _);
         }
 
         /// <inheritdoc />
@@ -174,8 +200,8 @@ namespace OoLunar.AsyncEvents
         public void ClearHandlers(Type type)
         {
             ThrowIfNullOrNotAsyncEventArgs(type);
-            MethodInfo genericMethod = _clearHandlersGenericMethod.MakeGenericMethod(type);
-            genericMethod.Invoke(this, []);
+            ClearPreHandlers(type);
+            ClearPostHandlers(type);
         }
 
         public void ClearHandlers()

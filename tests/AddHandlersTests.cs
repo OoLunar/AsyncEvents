@@ -24,8 +24,8 @@ namespace OoLunar.AsyncEvents.Tests
             Assert.AreEqual(1, asyncEvent.PostHandlers[AsyncEventPriority.Normal].Count);
             Assert.AreEqual(1, asyncEvent.PreHandlers[AsyncEventPriority.Normal].Count);
 
-            Assert.AreEqual(handlers.PostHandler, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
-            Assert.AreEqual(handlers.PreHandler, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
+            Assert.AreEqual(handlers.InvokeAsync, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
+            Assert.AreEqual(handlers.PreInvokeAsync, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
         }
 
         [TestMethod, AsyncEventDataSource]
@@ -49,8 +49,8 @@ namespace OoLunar.AsyncEvents.Tests
             Assert.AreEqual(1, asyncEvent.PostHandlers[AsyncEventPriority.Normal].Count);
             Assert.AreEqual(1, asyncEvent.PreHandlers[AsyncEventPriority.Normal].Count);
 
-            Assert.AreEqual(handlers.PostHandler, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
-            Assert.AreEqual(handlers.PreHandler, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
+            Assert.AreEqual(handlers.InvokeAsync, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
+            Assert.AreEqual(handlers.PreInvokeAsync, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
         }
 
         [TestMethod, AsyncEventDataSource]
@@ -66,23 +66,15 @@ namespace OoLunar.AsyncEvents.Tests
             Assert.AreEqual(1, asyncEvent.PostHandlers[AsyncEventPriority.Normal].Count);
             Assert.AreEqual(1, asyncEvent.PreHandlers[AsyncEventPriority.Normal].Count);
 
-            Assert.AreEqual(handlers.PostHandler, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
-            Assert.AreEqual(handlers.PreHandler, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
-        }
-
-        [TestMethod, AsyncEventDataSource]
-        public void AddHandlers_Instance_WithoutObject(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
-        {
-            asyncEvent.AddHandlers(new EventHandlers());
-
-            Assert.AreEqual(0, asyncEvent.PostHandlers.Count);
-            Assert.AreEqual(0, asyncEvent.PreHandlers.Count);
+            Assert.AreEqual(handlers.InvokeAsync, asyncEvent.PostHandlers[AsyncEventPriority.Normal][0]);
+            Assert.AreEqual(handlers.PreInvokeAsync, asyncEvent.PreHandlers[AsyncEventPriority.Normal][0]);
         }
 
         [TestMethod, AsyncEventDataSource]
         public void AddHandlers_Static(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddHandlers(new StaticEventHandlers());
+            asyncEvent.AddPostHandler(StaticEventHandlers.PostHandler);
+            asyncEvent.AddPreHandler(StaticEventHandlers.PreHandler);
 
             Assert.AreEqual(1, asyncEvent.PostHandlers.Count);
             Assert.AreEqual(1, asyncEvent.PreHandlers.Count);
@@ -97,8 +89,10 @@ namespace OoLunar.AsyncEvents.Tests
         [TestMethod, AsyncEventDataSource]
         public void AddHandlers_Static_Twice(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
-            asyncEvent.AddHandlers(new StaticEventHandlers());
-            asyncEvent.AddHandlers(new StaticEventHandlers());
+            asyncEvent.AddPostHandler(StaticEventHandlers.PostHandler);
+            asyncEvent.AddPostHandler(StaticEventHandlers.PostHandler);
+            asyncEvent.AddPreHandler(StaticEventHandlers.PreHandler);
+            asyncEvent.AddPreHandler(StaticEventHandlers.PreHandler);
 
             Assert.AreEqual(1, asyncEvent.PostHandlers.Count);
             Assert.AreEqual(1, asyncEvent.PreHandlers.Count);

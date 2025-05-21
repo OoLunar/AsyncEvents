@@ -13,7 +13,7 @@ namespace OoLunar.AsyncEvents.Tests
             EventHandlers handlers = new();
             asyncEvent.AddHandlers(handlers);
 
-            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreHandler));
+            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreInvokeAsync));
             Assert.AreEqual(0, asyncEvent.PreHandlers.Count);
         }
 
@@ -23,8 +23,8 @@ namespace OoLunar.AsyncEvents.Tests
             EventHandlers handlers = new();
             asyncEvent.AddHandlers(handlers);
 
-            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreHandler));
-            Assert.IsFalse(asyncEvent.RemovePreHandler(handlers.PreHandler));
+            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreInvokeAsync));
+            Assert.IsFalse(asyncEvent.RemovePreHandler(handlers.PreInvokeAsync));
             Assert.AreEqual(0, asyncEvent.PreHandlers.Count);
         }
 
@@ -32,9 +32,9 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePreHandler_Instance_Priority(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddPreHandler(handlers.PreHandler, AsyncEventPriority.High);
+            asyncEvent.AddPreHandler(handlers.PreInvokeAsync, AsyncEventPriority.High);
 
-            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreHandler, AsyncEventPriority.High));
+            Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreInvokeAsync, AsyncEventPriority.High));
             Assert.AreEqual(0, asyncEvent.PreHandlers.Count);
         }
 
@@ -51,7 +51,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePreHandler_Unregistered(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddPreHandler(handlers.PreHandler);
+            asyncEvent.AddPreHandler(handlers.PreInvokeAsync);
 
             Assert.IsFalse(asyncEvent.RemovePreHandler(StaticEventHandlers.PreHandler));
             Assert.AreEqual(1, asyncEvent.PreHandlers.Count);

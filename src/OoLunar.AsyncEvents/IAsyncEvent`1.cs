@@ -33,8 +33,10 @@ namespace OoLunar.AsyncEvents
             {
                 AddPreHandler(handler.PreInvokeAsync, priority);
             }
-
-            throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
+            else
+            {
+                throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
+            }
         }
 
         /// <inheritdoc cref="AddPreHandler(AsyncEventPreHandler{TEventArgs}, AsyncEventPriority)" />
@@ -52,8 +54,10 @@ namespace OoLunar.AsyncEvents
             {
                 AddPostHandler(handler.InvokeAsync, priority);
             }
-
-            throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
+            else
+            {
+                throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
+            }
         }
 
         /// <inheritdoc cref="AddPostHandler(AsyncEventPostHandler{TEventArgs}, AsyncEventPriority)" />
@@ -90,13 +94,13 @@ namespace OoLunar.AsyncEvents
             if (instance is IAsyncEventPreHandler preHandler)
             {
                 Delegate handler = preHandler.PreInvokeAsync;
-                AddPreHandler(preHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+                AddPreHandler(preHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerPriorityAttribute>()?.Priority ?? AsyncEventPriority.Normal);
             }
 
             if (instance is IAsyncEventPostHandler postHandler)
             {
                 Delegate handler = postHandler.InvokeAsync;
-                AddPostHandler(postHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+                AddPostHandler(postHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerPriorityAttribute>()?.Priority ?? AsyncEventPriority.Normal);
             }
         }
 

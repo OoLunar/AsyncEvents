@@ -5,10 +5,10 @@ namespace OoLunar.AsyncEvents.Tests.Data
 {
     public class StaticEventHandlers
     {
-        [AsyncEventHandler]
+        [AsyncEventHandlerPriority]
         public static ValueTask<bool> PreHandler(TestAsyncEventArgs _, CancellationToken __) => ValueTask.FromResult(true);
 
-        [AsyncEventHandler]
+        [AsyncEventHandlerPriority]
         public static ValueTask PostHandler(TestAsyncEventArgs _, CancellationToken __) => ValueTask.CompletedTask;
     }
 }

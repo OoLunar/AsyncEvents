@@ -4,12 +4,10 @@ using OoLunar.AsyncEvents.Tests.Data;
 
 namespace OoLunar.AsyncEvents.Tests
 {
-    public sealed class EventHandlers
+    public sealed class EventHandlers : IAsyncEventPostHandler<TestAsyncEventArgs>, IAsyncEventPreHandler<TestAsyncEventArgs>
     {
-        [AsyncEventHandler]
-        public ValueTask<bool> PreHandler(TestAsyncEventArgs _, CancellationToken __) => ValueTask.FromResult(true);
+        public ValueTask<bool> PreInvokeAsync(TestAsyncEventArgs _, CancellationToken __) => ValueTask.FromResult(true);
 
-        [AsyncEventHandler]
-        public ValueTask PostHandler(TestAsyncEventArgs _, CancellationToken __) => ValueTask.CompletedTask;
+        public ValueTask InvokeAsync(TestAsyncEventArgs _, CancellationToken __) => ValueTask.CompletedTask;
     }
 }
