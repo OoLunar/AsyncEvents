@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup Label="Build Properties">
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
     <PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(ProjectRoot)/CHANGELOG.md'))</PackageReleaseNotes>
   </PropertyGroup>

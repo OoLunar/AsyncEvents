@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using OoLunar.AsyncEvents.AsyncEventClosures;
 
 namespace OoLunar.AsyncEvents.ParallelAsyncEvents
 {

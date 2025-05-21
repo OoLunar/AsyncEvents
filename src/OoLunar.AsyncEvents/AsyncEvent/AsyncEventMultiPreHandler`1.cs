@@ -4,7 +4,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace OoLunar.AsyncEvents.AsyncEventClosures
+namespace OoLunar.AsyncEvents
 {
     internal class AsyncEventMultiPreHandler<TAsyncEventArgs> where TAsyncEventArgs : AsyncEventArgs
     {

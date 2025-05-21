@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OoLunar.AsyncEvents.Tests.Data;
@@ -16,13 +17,13 @@ namespace OoLunar.AsyncEvents.Tests
         public GetHandlerTests()
         {
             _container = new();
-            _container.AddHandlers<EventHandlers>(new EventHandlers());
+            _container.AddHandlers(new EventHandlers());
         }
 
         [TestMethod]
         public async ValueTask GetHandler_Generic_MultithreadedAsync()
         {
-            AsyncEvent<TestAsyncEventArgs> asyncEvent;
+            IAsyncEvent<TestAsyncEventArgs> asyncEvent;
             await Parallel.ForAsync(0, 1000, async (_, _) =>
             {
                 asyncEvent = _container.GetAsyncEvent<TestAsyncEventArgs>();
@@ -36,8 +37,8 @@ namespace OoLunar.AsyncEvents.Tests
             IAsyncEvent asyncEvent;
             await Parallel.ForAsync(0, 1000, async (_, _) =>
             {
-                asyncEvent = _container.GetAsyncEvent(typeof(TestAsyncEventArgs));
-                await asyncEvent.InvokeAsync(new TestAsyncEventArgs());
+                asyncEvent = _container.GetAsyncEvent<TestAsyncEventArgs>();
+                await asyncEvent.InvokeAsync(new TestAsyncEventArgs(), CancellationToken.None);
             });
         }
 

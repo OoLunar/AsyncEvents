@@ -22,68 +22,43 @@ namespace OoLunar.AsyncEvents
         /// </summary>
         public IReadOnlyDictionary<AsyncEventPriority, IReadOnlyList<AsyncEventPostHandler<TEventArgs>>> PostHandlers { get; }
 
-        /// <summary>
-        /// Searches the specified type for methods with the <see cref="AsyncEventHandlerAttribute"/> and registers them as pre/post-handlers.
-        /// </summary>
-        /// <param name="target">The target object to bind the methods to. If <see langword="null"/>, only static methods will be registered. If not <see langword="null"/>, the object will be reused when binding to the methods.</param>
-        /// <typeparam name="T">The type to search for methods marked with the <see cref="AsyncEventHandlerAttribute"/>.</typeparam>
-        public void AddHandlers<T>(object? target = null) => AddHandlers(typeof(T), target);
-
-        /// <summary>
-        /// Searches the specified type for methods with the <see cref="AsyncEventHandlerAttribute"/> and registers them as pre/post-handlers.
-        /// </summary>
-        /// <param name="type">The type to search for methods marked with the <see cref="AsyncEventHandlerAttribute"/>.</param>
-        /// <param name="target">The target object to bind the methods to. If <see langword="null"/>, only static methods will be registered. If not <see langword="null"/>, the object will be reused when binding to the methods.</param>
-        public void AddHandlers(Type type, object? target = null)
+        /// <inheritdoc cref="AddPreHandler(AsyncEventPreHandler{TEventArgs}, AsyncEventPriority)" />
+        public void AddPreHandler(IAsyncEventPreHandler handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
         {
-            ArgumentNullException.ThrowIfNull(type, nameof(type));
-
-            foreach (MethodInfo method in type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            if (handler is IAsyncEventPreHandler<TEventArgs> typedHandler)
             {
-                // If the method does not have the AsyncEventHandlerAttribute, skip the method
-                AsyncEventHandlerAttribute? attribute = method.GetCustomAttribute<AsyncEventHandlerAttribute>();
-                if (attribute is null)
-                {
-                    continue;
-                }
-
-                // If the return type is not a ValueTask or ValueTask<bool>, skip the method
-                if (method.ReturnType != typeof(ValueTask) && method.ReturnType != typeof(ValueTask<bool>))
-                {
-                    continue;
-                }
-
-                // Else if the method's signature does not match the expected signature, skip the method
-                ParameterInfo[] parameters = method.GetParameters();
-                if (parameters.Length != 2 || !parameters[0].ParameterType.IsAssignableTo(typeof(TEventArgs)) || parameters[1].ParameterType != typeof(CancellationToken))
-                {
-                    continue;
-                }
-
-                if (method.ReturnType == typeof(ValueTask<bool>))
-                {
-                    if (method.IsStatic)
-                    {
-                        AddPreHandler((AsyncEventPreHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPreHandler<TEventArgs>), method), attribute.Priority);
-                    }
-                    else if (target is not null)
-                    {
-                        AddPreHandler((AsyncEventPreHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPreHandler<TEventArgs>), target, method), attribute.Priority);
-                    }
-                }
-                else
-                {
-                    if (method.IsStatic)
-                    {
-                        AddPostHandler((AsyncEventPostHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPostHandler<TEventArgs>), method), attribute.Priority);
-                    }
-                    else if (target is not null)
-                    {
-                        AddPostHandler((AsyncEventPostHandler<TEventArgs>)Delegate.CreateDelegate(typeof(AsyncEventPostHandler<TEventArgs>), target, method), attribute.Priority);
-                    }
-                }
+                AddPreHandler(typedHandler, priority);
             }
+            else if (handler.EventArgsType == typeof(TEventArgs))
+            {
+                AddPreHandler(handler.PreInvokeAsync, priority);
+            }
+
+            throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
         }
+
+        /// <inheritdoc cref="AddPreHandler(AsyncEventPreHandler{TEventArgs}, AsyncEventPriority)" />
+        public void AddPreHandler(IAsyncEventPreHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
+            => AddPreHandler(handler.PreInvokeAsync, priority);
+
+        /// <inheritdoc cref="AddPostHandler(AsyncEventPostHandler{TEventArgs}, AsyncEventPriority)" />
+        public void AddPostHandler(IAsyncEventPostHandler handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
+        {
+            if (handler is IAsyncEventPostHandler<TEventArgs> typedHandler)
+            {
+                AddPostHandler(typedHandler, priority);
+            }
+            else if (handler.EventArgsType == typeof(TEventArgs))
+            {
+                AddPostHandler(handler.InvokeAsync, priority);
+            }
+
+            throw new ArgumentException($"Handler type {handler.GetType()} does not match event type {typeof(TEventArgs)}.", nameof(handler));
+        }
+
+        /// <inheritdoc cref="AddPostHandler(AsyncEventPostHandler{TEventArgs}, AsyncEventPriority)" />
+        public void AddPostHandler(IAsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal)
+            => AddPostHandler(handler.InvokeAsync, priority);
 
         /// <summary>
         /// Registers a new pre-handler with the specified priority.
@@ -104,6 +79,26 @@ namespace OoLunar.AsyncEvents
         /// <param name="handler">The post-handler delegate to register.</param>
         /// <param name="priority">The priority of the handler. Handlers with higher priority will be invoked first.</param>
         public void AddPostHandler(AsyncEventPostHandler<TEventArgs> handler, AsyncEventPriority priority = AsyncEventPriority.Normal);
+
+        /// <summary>
+        /// Adds both pre-handlers and post-handlers to the event.
+        /// </summary>
+        /// <param name="instance">The object implementing <see cref="IAsyncEventPreHandler"/> and/or <see cref="IAsyncEventPostHandler"/>.</param>
+        public void AddHandlers(object instance)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+            if (instance is IAsyncEventPreHandler preHandler)
+            {
+                Delegate handler = preHandler.PreInvokeAsync;
+                AddPreHandler(preHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+            }
+
+            if (instance is IAsyncEventPostHandler postHandler)
+            {
+                Delegate handler = postHandler.InvokeAsync;
+                AddPostHandler(postHandler, handler.Method.GetCustomAttribute<AsyncEventHandlerAttribute>()?.Priority ?? AsyncEventPriority.Normal);
+            }
+        }
 
         /// <summary>
         /// Removes a pre-handler from the event.

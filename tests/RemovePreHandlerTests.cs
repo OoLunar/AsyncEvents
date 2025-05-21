@@ -11,7 +11,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePreHandler_Instance(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreHandler));
             Assert.AreEqual(0, asyncEvent.PreHandlers.Count);
@@ -21,7 +21,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePreHandler_Instance_Twice(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             Assert.IsTrue(asyncEvent.RemovePreHandler(handlers.PreHandler));
             Assert.IsFalse(asyncEvent.RemovePreHandler(handlers.PreHandler));

@@ -9,12 +9,8 @@ namespace OoLunar.AsyncEvents.Benchmarks.Cases
         private readonly InstanceEventHandlers _instanceEventHandlers = new();
 
         [Benchmark, ArgumentsSource("CreateAsyncEvents")]
-        public void AddStaticHandlers(IAsyncEvent<AsyncEventArgs> asyncEvent, string asyncEventName)
-            => asyncEvent.AddHandlers<StaticEventHandlers>();
-
-        [Benchmark, ArgumentsSource("CreateAsyncEvents")]
-        public void AddInstanceHandlers(IAsyncEvent<AsyncEventArgs> asyncEvent, string asyncEventName)
-            => asyncEvent.AddHandlers<InstanceEventHandlers>(_instanceEventHandlers);
+        public void AddHandlers(IAsyncEvent<AsyncEventArgs> asyncEvent, string asyncEventName)
+            => asyncEvent.AddHandlers(_instanceEventHandlers);
 
         [Benchmark, ArgumentsSource("CreateAsyncEvents")]
         public void AddPostHandler(IAsyncEvent<AsyncEventArgs> asyncEvent, string asyncEventName)

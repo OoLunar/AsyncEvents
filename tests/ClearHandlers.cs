@@ -11,7 +11,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void Clear_Handlers(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             asyncEvent.ClearHandlers();
 
@@ -23,7 +23,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void Clear_PreHandlers(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             asyncEvent.ClearPreHandlers();
 
@@ -35,7 +35,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void Clear_PostHandlers(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             asyncEvent.ClearPostHandlers();
 

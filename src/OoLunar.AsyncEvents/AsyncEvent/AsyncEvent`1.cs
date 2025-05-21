@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using OoLunar.AsyncEvents.AsyncEventClosures;
 
 namespace OoLunar.AsyncEvents
 {

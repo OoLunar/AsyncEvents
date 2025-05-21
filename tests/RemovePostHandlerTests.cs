@@ -11,7 +11,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePostHandler_Instance(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.PostHandler));
             Assert.AreEqual(0, asyncEvent.PostHandlers.Count);
@@ -21,7 +21,7 @@ namespace OoLunar.AsyncEvents.Tests
         public void RemovePostHandler_Instance_Twice(IAsyncEvent<TestAsyncEventArgs> asyncEvent)
         {
             EventHandlers handlers = new();
-            asyncEvent.AddHandlers<EventHandlers>(handlers);
+            asyncEvent.AddHandlers(handlers);
 
             Assert.IsTrue(asyncEvent.RemovePostHandler(handlers.PostHandler));
             Assert.IsFalse(asyncEvent.RemovePostHandler(handlers.PostHandler));
